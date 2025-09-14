@@ -1,0 +1,198 @@
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'ShinierPersonal';
+  src: url('./assets/fonts/shinierpersonaluseonlyregular-e4epr.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: fallback;
+}
+
+@font-face {
+  font-family: 'ShinierPersonal Fallback';
+  src: local('Georgia'), local('Times New Roman');
+  size-adjust: 95%;
+  ascent-override: 90%;
+  descent-override: 10%;
+  line-gap-override: 0%;
+}
+
+
+.font-loading {
+  font-family: 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-loaded {
+  font-family: 'ShinierPersonal', 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+}
+
+* {
+  font-family: inherit;
+}
+
+:root {
+  /* Brunswick Green - Darkest */
+  --brunswick-green: #344e41;
+  --brunswick-green-100: #0a1309;
+  --brunswick-green-200: #142512;
+  --brunswick-green-300: #1f371b;
+  --brunswick-green-400: #2a4924;
+  --brunswick-green-500: #344e41;
+  --brunswick-green-600: #4a6d5a;
+  --brunswick-green-700: #608c73;
+  --brunswick-green-800: #76ab8c;
+  --brunswick-green-900: #8ccaa5;
+
+  /* Hunter Green - Dark */
+  --hunter-green: #3a5a40;
+  --hunter-green-100: #0b1709;
+  --hunter-green-200: #172d12;
+  --hunter-green-300: #22441c;
+  --hunter-green-400: #2e5b25;
+  --hunter-green-500: #3a5a40;
+  --hunter-green-600: #527958;
+  --hunter-green-700: #6a9870;
+  --hunter-green-800: #82b788;
+  --hunter-green-900: #9ad6a0;
+
+  /* Fern Green - Medium */
+  --fern-green: #588157;
+  --fern-green-100: #111a11;
+  --fern-green-200: #233322;
+  --fern-green-300: #344d33;
+  --fern-green-400: #466644;
+  --fern-green-500: #588157;
+  --fern-green-600: #7397745;
+  --fern-green-700: #8fad8e;
+  --fern-green-800: #abc3aa;
+  --fern-green-900: #c7d9c6;
+
+  /* Sage - Light Green-Gray */
+  --sage: #a3b18a;
+  --sage-100: #20241c;
+  --sage-200: #414938;
+  --sage-300: #616d54;
+  --sage-400: #829270;
+  --sage-500: #a3b18a;
+  --sage-600: #b5c1a1;
+  --sage-700: #c7d1b8;
+  --sage-800: #d9e0cf;
+  --sage-900: #ecf0e7;
+
+  /* Timberwolf - Lightest */
+  --timberwolf: #dad7cd;
+  --timberwolf-100: #2b2a26;
+  --timberwolf-200: #57554c;
+  --timberwolf-300: #827f72;
+  --timberwolf-400: #aeab9f;
+  --timberwolf-500: #dad7cd;
+  --timberwolf-600: #e1dfd7;
+  --timberwolf-700: #e8e7e1;
+  --timberwolf-800: #f0efeb;
+  --timberwolf-900: #f7f7f5;
+
+  --federal-blue: var(--brunswick-green);
+  --honolulu-blue: var(--hunter-green);
+  --pacific-cyan: var(--fern-green);
+  --non-photo-blue: var(--sage);
+  --light-cyan: var(--timberwolf);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'ShinierPersonal', 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--timberwolf);
+  color: var(--brunswick-green);
+  overflow-x: hidden;
+}
+
+code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--brunswick-green-200);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fern-green);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fern-green-700);
+}
+
+::selection {
+  background-color: var(--fern-green);
+  color: var(--timberwolf);
+}
+
+::-moz-selection {
+  background-color: var(--fern-green);
+  color: var(--timberwolf);
+}
+
+*:focus {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+}
+
+* {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+}
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+    --accent: #00ff00;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

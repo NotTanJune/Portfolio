@@ -1,9 +1,11 @@
 # MERN Stack Portfolio Website
 
 A modern, responsive portfolio website built with the MERN stack (MongoDB, Express.js, React, Node.js) to 
-display my projects, achievements, and overall design language
+display my projects, achievements, and overall design language.
 
-## 🌟 Features
+## Check out the website: www.tanmaynargas.engineer
+
+## Features
 
 - **Modern Design**: Clean, responsive design built with React and Tailwind CSS
 - **Project Showcase**: Dynamic project gallery with filtering and detailed views
@@ -14,7 +16,7 @@ display my projects, achievements, and overall design language
 - **TypeScript**: Full TypeScript support for better development experience
 - **API-Driven**: RESTful API with proper error handling and validation
 
-## 🔒 Security Features
+## Security Features
 
 - JWT authentication for admin routes
 - Rate limiting to prevent abuse
@@ -23,11 +25,11 @@ display my projects, achievements, and overall design language
 - CORS configuration
 - Environment variable protection
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - React community for excellent documentation
 - Tailwind CSS for the utility-first approach

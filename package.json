@@ -32,6 +32,6 @@
     "helmet": "^7.1.0",
     "express-rate-limit": "^7.1.5"
   },
-  "author": "Your Name",
+  "author": "Tanmay Nargas",
   "license": "MIT"
 }

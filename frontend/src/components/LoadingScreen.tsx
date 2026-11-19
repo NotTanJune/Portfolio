@@ -1,92 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './LoadingScreen.css';
 
 interface LoadingScreenProps {
   onLoadingComplete: () => void;
+  /** Resolves when real first-paint assets are ready; the counter holds at 99% until then. */
+  whenReady?: Promise<unknown>;
 }
 
-const LoadingScreen: React.FC<LoadingScreenProps> = ({ onLoadingComplete }) => {
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+// Timing for the staged counter (ms).
+const FAST_DURATION = 180;   // 0 -> 99, quick
+const MIN_HOLD_99 = 40;      // the "kink": always pause at 99% at least this long
+const MAX_HOLD_99 = 4000;    // hard cap so a slow/failed asset can never hang the loader
+const FINISH_DURATION = 60;  // 99 -> 100
+const HOLD_AT_100 = 0;       // reveal as soon as 100 is shown
+
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+const LoadingScreen: React.FC<LoadingScreenProps> = ({
+  onLoadingComplete,
+  whenReady
+}) => {
+  // Keep the overlay in place while it fades so underlying content is never
+  // revealed from the footer upward during a cold-load handoff.
+  const variants = {
+    visible: { opacity: 1, y: 0, scale: 1 },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.14, ease: [0.4, 0, 0.2, 1] }
+    }
+  } as const;
+
+  const [show, setShow] = useState(true);
+  const counterRef = useRef<HTMLSpanElement>(null);
+  const onEndRef = useRef(onLoadingComplete);
+  const whenReadyRef = useRef(whenReady);
+  onEndRef.current = onLoadingComplete;
+  whenReadyRef.current = whenReady;
 
   useEffect(() => {
-    let progressInterval: NodeJS.Timeout;
-    let minLoadTimeout: NodeJS.Timeout;
-    let hasReachedTarget = false;
-    
-    const startTime = Date.now();
-    const totalDuration = 2500;
-    
-    progressInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progressPercentage = Math.min((elapsed / totalDuration) * 100, 100);
-      
-      const variance = Math.random() * 3 - 1.5;
-      const adjustedProgress = Math.min(Math.max(progressPercentage + variance, 0), 100);
-      
-      setProgress(adjustedProgress);
-      
-      if (adjustedProgress >= 100 && !hasReachedTarget) {
-        hasReachedTarget = true;
-        clearInterval(progressInterval);
-        
-        setTimeout(() => {
-          setIsVisible(false);
-          setTimeout(() => {
-            onLoadingComplete();
-          }, 800);
-        }, 300);
-      }
-    }, 50);
+    let cancelled = false;
+    let raf = 0;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    minLoadTimeout = setTimeout(() => {
-      if (!hasReachedTarget) {
-        hasReachedTarget = true;
-        setProgress(100);
-        clearInterval(progressInterval);
-        
-        setTimeout(() => {
-          setIsVisible(false);
-          setTimeout(() => {
-            onLoadingComplete();
-          }, 800);
-        }, 300);
+    const setText = (v: number) => {
+      if (counterRef.current) counterRef.current.textContent = String(v);
+    };
+    const sleep = (ms: number) => {
+      const p = new Promise<void>((resolve) => {
+        timeouts.push(setTimeout(resolve, ms));
+      });
+      return p;
+    };
+
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Animate a value over `ms` with an ease-out curve, calling onFrame each tick.
+    const animate = (from: number, to: number, ms: number, onFrame: (v: number) => void) =>
+      new Promise<void>((resolve) => {
+        let start: number | null = null;
+        const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+        const tick = (now: number) => {
+          if (cancelled) return resolve();
+          if (start === null) start = now;
+          const p = Math.min(1, (now - start) / ms);
+          onFrame(from + (to - from) * easeOut(p));
+          if (p < 1) {
+            raf = requestAnimationFrame(tick);
+          } else {
+            resolve();
+          }
+        };
+        raf = requestAnimationFrame(tick);
+      });
+
+    // The ready gate: never shorter than MIN_HOLD_99, never longer than MAX_HOLD_99.
+    const readyGate = async () => {
+      const ready = Promise.resolve(whenReadyRef.current).catch(() => undefined);
+      await Promise.all([
+        sleep(MIN_HOLD_99),
+        Promise.race([ready, wait(MAX_HOLD_99)])
+      ]);
+    };
+
+    const run = async () => {
+      if (prefersReduced) {
+        setText(99);
+        await readyGate();
+        if (cancelled) return;
+        setText(100);
+      } else {
+        await animate(0, 99, FAST_DURATION, (v) => setText(Math.floor(v)));
+        if (cancelled) return;
+        setText(99);
+        await readyGate();
+        if (cancelled) return;
+        await animate(99, 100, FINISH_DURATION, (v) => setText(Math.round(v)));
+        if (cancelled) return;
+        setText(100);
       }
-    }, totalDuration + 500);
+      await sleep(HOLD_AT_100);
+      if (cancelled) return;
+      setShow(false);
+    };
+
+    run();
 
     return () => {
-      clearInterval(progressInterval);
-      clearTimeout(minLoadTimeout);
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      timeouts.forEach(clearTimeout);
     };
-  }, [onLoadingComplete]);
+  }, []);
 
   return (
-    <div className={`loading-screen ${!isVisible ? 'loading-screen--fade-out' : ''}`}>
-      <div className="loading-screen__content">
-        <div className="loading-screen__header">
-          <h1 className="loading-screen__title">Tanmay Nargas</h1>
-          <p className="loading-screen__subtitle">AI Engineer & ML Developer</p>
-        </div>
-        
-        <div className="loading-screen__progress">
-          <div className="loading-screen__progress-bar">
-            <div 
-              className="loading-screen__progress-fill"
-              style={{ width: `${progress}%` }}
-            />
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          className="hk-opening"
+          aria-label="Loading"
+          variants={variants}
+          initial="visible"
+          animate="visible"
+          exit="exit"
+          onAnimationComplete={(def) => {
+            if (def === 'exit') {
+              onEndRef.current?.();
+            }
+          }}
+        >
+          <div className="hk-opening__center">
+            <div className="hk-counter-wrapper">
+              <span className="hk-counter" ref={counterRef}>0</span>
+              <span className="hk-percent">%</span>
+            </div>
           </div>
-          <div className="loading-screen__percentage">
-            {Math.floor(progress)}%
-          </div>
-        </div>
-
-        <div className="loading-screen__dots">
-          <div className="loading-screen__dot loading-screen__dot--1"></div>
-          <div className="loading-screen__dot loading-screen__dot--2"></div>
-          <div className="loading-screen__dot loading-screen__dot--3"></div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

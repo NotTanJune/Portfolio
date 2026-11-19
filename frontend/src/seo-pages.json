@@ -1,0 +1,18 @@
+{
+  "/": {
+    "title": "Tanmay Nargas | AI Engineer & Full Stack Developer",
+    "description": "AI engineer in Singapore and MS AI student at NTU. Builds LLM agents, ML systems and full-stack web apps, with past work at Bosch and Ericsson."
+  },
+  "/projects": {
+    "title": "Projects | Tanmay Nargas",
+    "description": "Explore Tanmay Nargas's projects in AI engineering, web development, machine learning, Rust, and software engineering."
+  },
+  "/resume": {
+    "title": "Resume | Tanmay Nargas",
+    "description": "View Tanmay Nargas's resume, including AI engineering experience, education, skills, and selected work."
+  },
+  "/contact": {
+    "title": "Contact | Tanmay Nargas",
+    "description": "Get in touch with Tanmay Nargas about AI engineering, software development, projects, and collaboration."
+  }
+}

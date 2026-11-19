@@ -2,7 +2,12 @@
   "name": "tanmay-portfolio-frontend",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": "1.4.0"
+  },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@headlessui/react": "^2.2.7",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/dom": "^10.4.1",
@@ -16,6 +21,7 @@
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -25,10 +31,13 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "prestart": "bun scripts/clean-eslint-cache.js",
     "start": "react-scripts start",
+    "prebuild": "bun scripts/clean-eslint-cache.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "clean:eslintcache": "bun scripts/clean-eslint-cache.js"
   },
   "eslintConfig": {
     "extends": [
@@ -47,5 +56,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "eslint-plugin-jest": "25.7.0"
   }
 }

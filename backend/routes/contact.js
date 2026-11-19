@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 const Contact = require('../models/Contact');
+const { clientIp } = require('../client-ip');
+const { verifyTurnstileToken } = require('../turnstile');
 
+const COOLDOWN_MS = 30000;
+const LIMITS = { name: 100, subject: 200, message: 2000 };
 const rateLimitStore = new Map();
 
 const transporter = nodemailer.createTransport({
@@ -13,176 +17,138 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[character]));
+}
+
+const EMAIL_FONT = "'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', 'Trebuchet MS', sans-serif";
+
+function buildEmailHtml({ name, subject, message, ip, userAgent, formDuration }) {
+  const body = escapeHtml(message.trim()).replace(/\n/g, '<br>');
+  const preview = escapeHtml(message.trim().replace(/\s+/g, ' ').slice(0, 140));
+  const meta = [
+    ['Time on form', `${Math.round(formDuration / 1000)}s`],
+    ['Received', new Date().toLocaleString()],
+    ['IP address', ip],
+    ['User agent', userAgent || 'Unknown'],
+  ];
+  const metaRows = meta.map(([label, value]) => `
+                <tr>
+                  <td style="padding: 3px 16px 3px 0; white-space: nowrap; vertical-align: top; color: #57554c;">${label}</td>
+                  <td style="padding: 3px 0; vertical-align: top; color: #2b2a26; word-break: break-word;">${escapeHtml(value)}</td>
+                </tr>`).join('');
+
+  return `
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">${preview}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #dad7cd;">
+      <tr>
+        <td align="center" style="padding: 32px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; background-color: #f0efeb; border-radius: 12px; font-family: ${EMAIL_FONT};">
+            <tr>
+              <td style="padding: 36px 32px 28px;">
+                <h1 style="margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -0.5px; color: #344e41;">${escapeHtml(subject.trim())}</h1>
+                <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.4; color: #57554c;">From <strong style="font-weight: 600; color: #3a5a40;">${escapeHtml(name.trim())}</strong> via your portfolio</p>
+                <p style="margin: 28px 0 0; font-size: 17px; line-height: 1.6; color: #2b2a26;">${body}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 32px;"><div style="height: 1px; line-height: 1px; font-size: 0; background-color: #d4d0c3;">&nbsp;</div></td>
+            </tr>
+            <tr>
+              <td style="padding: 20px 32px 32px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; line-height: 1.5;">${metaRows}
+                </table>
+                <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: #57554c;">Verified by Cloudflare Turnstile</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 router.post('/', async (req, res) => {
   try {
-    const { name, subject, message, captchaAnswer, captchaExpected, formStartTime, website } = req.body;
+    const { name, subject, message, website, turnstileToken, formStartTime } = req.body || {};
+    const fields = { name, subject, message };
 
-    if (!name || !subject || !message) {
-      return res.status(400).json({ message: 'Name, subject, and message are required' });
-    }
-
-    if (!captchaAnswer || parseInt(captchaAnswer) !== captchaExpected) {
-      return res.status(400).json({ message: 'Invalid security check answer' });
-    }
-
-    if (website && website.trim() !== '') {
-      return res.status(400).json({ message: 'Spam detected' });
-    }
-
-    const clientIP = req.ip || req.connection.remoteAddress;
-    const now = Date.now();
-    const rateLimitKey = `rate_${clientIP}`;
-    
-    if (rateLimitStore.has(rateLimitKey)) {
-      const lastSubmission = rateLimitStore.get(rateLimitKey);
-      if (now - lastSubmission < 30000) {
-        return res.status(429).json({ message: 'Please wait before submitting again' });
+    for (const [key, value] of Object.entries(fields)) {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return res.status(400).json({ message: 'Name, subject, and message are required' });
+      }
+      if (value.length > LIMITS[key]) {
+        return res.status(400).json({ message: 'Input exceeds maximum length' });
       }
     }
-    rateLimitStore.set(rateLimitKey, now);
 
-    if (formStartTime && (now - formStartTime < 3000)) {
-      return res.status(400).json({ message: 'Form submitted too quickly' });
+    // Honeypot: hidden from people, filled in by naive bots. Answer like a success so bots learn nothing.
+    if (typeof website === 'string' && website.trim() !== '') {
+      return res.status(201).json({ message: 'Message sent successfully! I\'ll get back to you soon.' });
     }
 
-    const content = `${name} ${subject} ${message}`.toLowerCase();
-    const suspiciousPatterns = [
-      /https?:\/\//gi,
-      /\b(viagra|casino|lottery|winner|congratulations|claim|prize|free money|earn money|work from home)\b/gi,
-      /(.)\1{10,}/,
-      /<[^>]*>/g,
-      /\b[A-Z]{5,}\b/g
-    ];
-
-    if (suspiciousPatterns.some(pattern => pattern.test(content))) {
-      return res.status(400).json({ message: 'Message contains suspicious content' });
+    const ip = clientIp(req);
+    const now = Date.now();
+    const lastSubmission = rateLimitStore.get(ip);
+    if (lastSubmission && now - lastSubmission < COOLDOWN_MS) {
+      return res.status(429).json({ message: 'Please wait a few seconds before sending another message.' });
     }
 
-    if (name.length > 100 || subject.length > 200 || message.length > 2000) {
-      return res.status(400).json({ message: 'Input exceeds maximum length' });
+    const verification = await verifyTurnstileToken(turnstileToken, ip);
+    if (!verification.ok) {
+      if (verification.reason === 'missing-secret') {
+        console.error('Contact form: TURNSTILE_SECRET_KEY is not set; rejecting submissions.');
+        return res.status(503).json({ message: 'The contact form is temporarily unavailable. Please reach out on LinkedIn instead.' });
+      }
+      console.warn('Contact form: Turnstile verification failed:', verification.reason);
+      return res.status(400).json({ message: 'Verification failed. Please complete the check again and resend.' });
     }
 
-    if (message.split(' ').length < 3) {
-      return res.status(400).json({ message: 'Message is too short' });
-    }
-    
+    rateLimitStore.set(ip, now);
+
+    const startedAt = Number(formStartTime);
+    const formDuration = Number.isFinite(startedAt) && startedAt > 0 && startedAt <= now ? now - startedAt : 0;
+    const userAgent = req.get('User-Agent');
+
     const contact = new Contact({
       name: name.trim(),
       email: '',
       subject: subject.trim(),
       message: message.trim(),
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
+      ipAddress: ip,
+      userAgent,
       submissionTime: new Date(),
-      formDuration: formStartTime ? now - formStartTime : 0
+      formDuration
     });
-    
+
     await contact.save();
-    
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // Your email address
-      subject: `Portfolio Contact: ${subject}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #344e41; border-bottom: 2px solid #588157; padding-bottom: 10px;">New Contact Form Submission</h2>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #3a5a40; margin-bottom: 10px;">Contact Details:</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px; font-weight: bold; color: #344e41; border-bottom: 1px solid #eee;">Name:</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee;">${name}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold; color: #344e41; border-bottom: 1px solid #eee;">Subject:</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px; font-weight: bold; color: #344e41; border-bottom: 1px solid #eee;">Form Duration:</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee;">${Math.round((formStartTime ? now - formStartTime : 0) / 1000)}s</td>
-              </tr>
-            </table>
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #3a5a40; margin-bottom: 10px;">Message:</h3>
-            <div style="background-color: #f8f7f5; padding: 15px; border-radius: 5px; border-left: 4px solid #588157;">
-              <p style="margin: 0; line-height: 1.6; color: #344e41;">${message.replace(/\n/g, '<br>')}</p>
-            </div>
-          </div>
-          
-          <div style="margin: 20px 0; font-size: 12px; color: #666;">
-            <h4 style="color: #3a5a40; margin-bottom: 5px;">Security Information:</h4>
-            <p>IP Address: ${req.ip || req.connection.remoteAddress}</p>
-            <p>User Agent: ${req.get('User-Agent') || 'Unknown'}</p>
-            <p>Submission Time: ${new Date().toLocaleString()}</p>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          <p style="font-size: 12px; color: #666; text-align: center; margin: 10px 0;">
-            <em>Sent from your portfolio website with spam protection active</em>
-          </p>
-        </div>
-      `
-    };
-    
-    await transporter.sendMail(mailOptions);
-    
-    res.status(201).json({ 
+
+    // The message is stored at this point. A mail failure is logged for the site owner,
+    // but the visitor is not told their message failed.
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: process.env.EMAIL_USER,
+        subject: `Portfolio Contact: ${subject.trim().replace(/[\r\n]+/g, ' ')}`,
+        html: buildEmailHtml({ name, subject, message, ip, userAgent, formDuration })
+      });
+    } catch (mailError) {
+      console.error(`Contact form: saved message ${contact._id} but email notification failed:`, mailError.message);
+    }
+
+    res.status(201).json({
       message: 'Message sent successfully! I\'ll get back to you soon.',
       id: contact._id
     });
   } catch (error) {
     console.error('Contact form error:', error);
     res.status(500).json({ message: 'Failed to send message. Please try again.' });
-  }
-});
-
-router.get('/', async (req, res) => {
-  try {
-    const { status, page = 1, limit = 10 } = req.query;
-    let query = {};
-    
-    if (status) query.status = status;
-    
-    const contacts = await Contact.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    const total = await Contact.countDocuments(query);
-    
-    res.json({
-      contacts,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalContacts: total
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-
-router.put('/:id/status', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const contact = await Contact.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-    
-    if (!contact) {
-      return res.status(404).json({ message: 'Contact not found' });
-    }
-    
-    res.json(contact);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
 });
 
@@ -193,6 +159,7 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-}, 60 * 60 * 1000);
+}, 60 * 60 * 1000).unref();
 
 module.exports = router;
+module.exports.escapeHtml = escapeHtml;

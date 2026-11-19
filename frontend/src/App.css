@@ -8,30 +8,15 @@ html, body {
   box-sizing: border-box;
 }
 
-@font-face {
-  font-family: 'ShinierPersonal';
-  src: url('./assets/fonts/shinierpersonaluseonlyregular-e4epr.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: fallback;
-}
-
-@font-face {
-  font-family: 'ShinierPersonal Fallback';
-  src: local('Georgia'), local('Times New Roman');
-  size-adjust: 95%;
-  ascent-override: 90%;
-  descent-override: 10%;
-  line-gap-override: 0%;
-}
-
+/* @font-face for 'Bricolage Grotesque' lives in public/index.html so it can use the
+   stable /fonts/ URL (matches the <link rel="preload">) without webpack rewriting it. */
 
 .font-loading {
-  font-family: 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+  font-family: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', sans-serif;
 }
 
 .font-loaded {
-  font-family: 'ShinierPersonal', 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+  font-family: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', sans-serif;
 }
 
 * {
@@ -70,7 +55,7 @@ html, body {
   --fern-green-300: #344d33;
   --fern-green-400: #466644;
   --fern-green-500: #588157;
-  --fern-green-600: #7397745;
+  --fern-green-600: #739774;
   --fern-green-700: #8fad8e;
   --fern-green-800: #abc3aa;
   --fern-green-900: #c7d9c6;
@@ -109,11 +94,16 @@ html, body {
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
-  font-family: 'ShinierPersonal', 'ShinierPersonal Fallback', 'Georgia', 'Times New Roman', serif;
+  font-family: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--timberwolf);
@@ -121,26 +111,62 @@ body {
   overflow-x: hidden;
 }
 
+/* Match the page background while the shell is still hidden on first paint. */
+html[data-theme="dark"] body {
+  background-color: #1a2419;
+  color: #f0efeb;
+}
+
 code {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
+/* Native form controls and scrollbars follow the <meta name="color-scheme">,
+   which theme-init.js and the toggle keep in sync. */
+:root {
+  color-scheme: light dark;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--brunswick-green-200);
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--fern-green);
-  border-radius: 5px;
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--fern-green-700);
+/* Custom scrollbar: standard properties, with ::-webkit-scrollbar only for
+   browsers that lack scrollbar-color (Safari before 26.2). */
+:root {
+  --scrollbar-thumb: var(--fern-green);
+  --scrollbar-thumb-hover: var(--fern-green-700);
+  --scrollbar-track: var(--brunswick-green-200);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+[data-theme="dark"] {
+  --scrollbar-thumb: #588157;
+  --scrollbar-thumb-hover: #6b9a69;
+  --scrollbar-track: #1a2419;
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
 }
 
 ::selection {
@@ -153,16 +179,26 @@ code {
   color: var(--timberwolf);
 }
 
-*:focus {
+/* Dark mode overrides for selection */
+[data-theme="dark"] ::selection {
+  background-color: #588157;
+  color: #f0efeb;
+}
+
+[data-theme="dark"] ::-moz-selection {
+  background-color: #588157;
+  color: #f0efeb;
+}
+
+/* Show focus ring only for keyboard navigation, not mouse clicks */
+*:focus-visible {
   outline: 2px solid var(--sage);
   outline-offset: 2px;
 }
 
-* {
-  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
-}
-
-@media (max-width: 768px) {
+/* Force smooth theme transitions cross-platform when toggling */
+html.theme-transition, html.theme-transition * {
+  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease !important;
 }
 
 @media print {
@@ -196,3 +232,5 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* (Removed hero-bg gradient & noise — flat background only) */

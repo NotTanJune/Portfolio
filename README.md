@@ -1,39 +1,89 @@
-# MERN Stack Portfolio Website
+# Tanmay Nargas: Portfolio
 
-A modern, responsive portfolio website built with the MERN stack (MongoDB, Express.js, React, Node.js) to 
-display my projects, achievements, and overall design language.
+Source for my personal portfolio at **[tanmaynargas.com](https://tanmaynargas.com)**: projects, experience, resume, and a contact form.
 
-## Check out the website: www.tanmaynargas.engineer
+## Stack
+
+- **Frontend:** React 19 and TypeScript (Create React App), Tailwind CSS, Framer Motion and GSAP for animation
+- **Backend:** Express on Bun, MongoDB through Mongoose, Nodemailer for contact notifications
+- **Hosting:** Heroku (heroku-26 stack, Bun buildpack) behind Cloudflare
 
 ## Features
 
-- **Modern Design**: Clean, responsive design built with React and Tailwind CSS
-- **Project Showcase**: Dynamic project gallery with filtering and detailed views
-- **Skills Section**: Interactive skills display with categories and proficiency levels
-- **Contact Form**: Functional contact form with email notifications
-- **Admin Panel**: Dashboard for managing content and seeding data
-- **Animations**: Smooth animations using Framer Motion
-- **TypeScript**: Full TypeScript support for better development experience
-- **API-Driven**: RESTful API with proper error handling and validation
+- Route-level code splitting, with a first-visit loader that waits for the first route and web fonts
+- Light and dark themes that follow the system setting; the toggle overrides it and toggling back returns to the system setting
+- Server-rendered route metadata (title, description, canonical, Open Graph, Twitter Card) for link previews
+- Contact form with Cloudflare Turnstile, a honeypot field, per-IP rate limiting, and a cooldown
+- Images converted to WebP at build time with Bun's native image pipeline
+- Respects `prefers-reduced-motion` across page and scroll animations
 
-## Security Features
+## Project layout
 
-- JWT authentication for admin routes
-- Rate limiting to prevent abuse
-- Helmet.js for security headers
-- Input validation and sanitization
-- CORS configuration
-- Environment variable protection
+```
+backend/    Express server: /api/contact, SEO rendering, static file cache headers
+frontend/   React app (pages in src/components/pages)
+scripts/    deploy.sh and the WebP image optimizer
+plans/      Write-ups of past performance and caching changes
+```
+
+## Local development
+
+Requires Bun `1.4.0` (pinned in `.bun-version`).
+
+```
+bun run install:all
+bun run dev
+```
+
+The backend runs on port 3001 and the React dev server on port 3000. Copy `.env.example` to `backend/.env` and fill in the values before starting the backend.
+
+### Environment variables
+
+| Variable | Used by | Purpose |
+| --- | --- | --- |
+| `MONGODB_URI` | backend | MongoDB connection string |
+| `CLIENT_URL` | backend | Allowed CORS origin, `https://tanmaynargas.com` in production |
+| `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM` | backend | Gmail account that sends contact notifications |
+| `TURNSTILE_SECRET_KEY` | backend | Cloudflare Turnstile server-side verification |
+| `REACT_APP_TURNSTILE_SITE_KEY` | frontend (build time) | Turnstile widget site key |
+| `PORT`, `NODE_ENV` | backend | Set by Heroku in production |
+
+## Tests
+
+```
+cd backend && bun test
+bun run test:images
+cd frontend && CI=true bun run test --watchAll=false
+```
+
+## Deployment
+
+Deploys run from the `heroku-deploy` branch with a single command:
+
+```
+bun run deploy
+```
+
+`scripts/deploy.sh` checks the Cloudflare API token, confirms the branch and a clean tree, optimizes images, runs all three test suites, pushes `heroku-deploy` to Heroku `main`, purges the Cloudflare cache, and smoke-checks the live site. Cloudflare credentials (`CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN`) live in a gitignored `.env.deploy`.
+
+Do not push to Heroku by hand. Cloudflare holds HTML at the edge for 7 days, so a push without the purge serves old HTML that points at deleted JavaScript chunks and renders a blank page.
+
+### Caching
+
+- Hashed JavaScript and CSS, and versioned Open Graph images (`og-v2.jpg`): one year, `immutable`
+- Images and fonts: one day in the browser, 30 days at the edge, stale-while-revalidate for 7 days
+- HTML: browsers always revalidate; Cloudflare caches it for 7 days until the deploy purge
+
+HTTP/3 terminates at Cloudflare, which connects to the Heroku origin over HTTPS. The `tanmaynargas.com` records must be proxied, with SSL/TLS mode set to Full (strict).
+
+### Image optimization
+
+`bun run optimize-images` converts images under `frontend/public/images` to WebP in place and removes each original only after its WebP output is verified. The Heroku build runs it before the React build, and a Husky pre-commit hook runs it on staged images. JPEG, PNG, WebP, BMP, and GIF work on Linux; HEIC, AVIF, and TIFF do not.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
 
-## Acknowledgments
+## Contact
 
-- React community for excellent documentation
-- Tailwind CSS for the utility-first approach
-- Framer Motion for smooth animations
-- MongoDB for flexible data storage
-
-### For reporting any bugs please email me at tanmaysa001@e.ntu.edu.sg
+Found a bug? Open an issue, or reach me through [tanmaynargas.com/contact](https://tanmaynargas.com/contact).

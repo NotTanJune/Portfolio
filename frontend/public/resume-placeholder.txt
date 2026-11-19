@@ -1,0 +1,8 @@
+This is a placeholder for the resume PDF file.
+
+To fix the resume display issue:
+1. Add your actual resume.pdf file to the c:\Portfolio\frontend\public\ folder
+2. Make sure the file is named exactly "resume.pdf"
+3. The iframe will then load your actual resume instead of showing the website
+
+The file should be placed at: c:\Portfolio\frontend\public\resume.pdf

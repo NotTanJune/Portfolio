@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Husky v10+ simple pre-commit script (no husky.sh helper)
+
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^frontend/public/images/.+\.(png|jpg|jpeg|bmp|gif|tiff|tif|heic|heif|avif|webp)$' || true)
+
+if [ -z "$CHANGED_FILES" ]; then
+	echo "No image changes detected. Skipping optimization."
+	exit 0
+fi
+
+echo "🔧 Optimizing images before commit..."
+
+if ! command -v bun >/dev/null 2>&1 || ! bun -e 'process.exit(typeof Bun.Image === "function" ? 0 : 1)'; then
+	echo "❌ Bun 1.4+ not found; cannot optimize images."
+	exit 1
+fi
+
+# Run optimizer and re-stage image directory
+echo "🖼️  Optimizing images..."
+if bun run optimize-images; then
+	git add frontend/public/images
+	echo "✅ Image optimization complete"
+else
+	echo "❌ Image optimization failed"
+	exit 1
+fi
+
+exit 0

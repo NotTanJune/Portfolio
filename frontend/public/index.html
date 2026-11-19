@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/portfolio.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Also colors Discord's embed bar, so it must read on dark backgrounds -->
+    <meta name="theme-color" content="#588157" />
+    <!-- "light dark" follows the system; theme-init.js pins it when the visitor has toggled -->
+    <meta name="color-scheme" content="light dark" />
+    <script src="%PUBLIC_URL%/theme-init.js"></script>
+    <meta
+      name="description"
+      content="AI engineer in Singapore and MS AI student at NTU. Builds LLM agents, ML systems and full-stack web apps, with past work at Bosch and Ericsson."
+    />
+    <meta name="author" content="Tanmay Nargas" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://tanmaynargas.com/" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Open Graph. The image filename is versioned: change it whenever the image changes so crawler caches refetch. -->
+    <meta property="og:site_name" content="Tanmay Nargas" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Tanmay Nargas | AI Engineer & Full Stack Developer" />
+    <meta property="og:description" content="AI engineer in Singapore and MS AI student at NTU. Builds LLM agents, ML systems and full-stack web apps, with past work at Bosch and Ericsson." />
+    <meta property="og:image" content="https://tanmaynargas.com/og/og-v2.jpg" />
+    <meta property="og:image:secure_url" content="https://tanmaynargas.com/og/og-v2.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Screenprint-style portrait of Tanmay Nargas on a mustard background, labeled AI Engineer, MS AI at NTU, Singapore." />
+    <meta property="og:url" content="https://tanmaynargas.com/" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@nottanjune" />
+    <meta name="twitter:creator" content="@nottanjune" />
+    <meta name="twitter:title" content="Tanmay Nargas | AI Engineer & Full Stack Developer" />
+    <meta name="twitter:description" content="AI engineer in Singapore and MS AI student at NTU. Builds LLM agents, ML systems and full-stack web apps, with past work at Bosch and Ericsson." />
+    <meta name="twitter:image" content="https://tanmaynargas.com/og/og-v2.jpg" />
+    <meta name="twitter:image:alt" content="Screenprint-style portrait of Tanmay Nargas on a mustard background, labeled AI Engineer, MS AI at NTU, Singapore." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Tanmay Nargas",
+        "url": "https://tanmaynargas.com/",
+        "image": "https://tanmaynargas.com/og/og-v2.jpg",
+        "jobTitle": "AI Engineer",
+        "address": { "@type": "PostalAddress", "addressLocality": "Singapore", "addressCountry": "SG" },
+        "alumniOf": [
+          { "@type": "CollegeOrUniversity", "name": "Nanyang Technological University" },
+          { "@type": "CollegeOrUniversity", "name": "Manipal Institute of Technology" }
+        ],
+        "sameAs": [
+          "https://github.com/NotTanJune",
+          "https://www.linkedin.com/in/tanmay-nargas",
+          "https://x.com/nottanjune"
+        ]
+      }
+    </script>
+    <!-- Preload the primary font (highest-priority text asset) to cut FOUT -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/bricolage-grotesque-latin.woff2" crossorigin="anonymous" />
+
+
+    <style>
+      /* Declared here (not in webpack-processed CSS) so the stable /fonts/ URL
+         is used verbatim and matches the preload link above. */
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+        font-weight: 200 800;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Fallback stack stays sans-serif so the swap to Bricolage Grotesque
+         doesn't jump from serif metrics (reduces layout shift / FOUT jar). */
+      body,
+      body.font-loading,
+      body.font-loaded {
+        font-family: 'Bricolage Grotesque', 'Avenir Next', 'Trebuchet MS', system-ui, sans-serif;
+      }
+    </style>
+    <title>Tanmay Nargas | AI Engineer & Full Stack Developer</title>
+  </head>
+  <body>
+    <noscript>Please enable JavaScript to view this portfolio website.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

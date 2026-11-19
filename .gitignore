@@ -28,3 +28,6 @@ yarn-error.log*
 
 .claude
 CLAUDE.md
+
+# Local environment files: production values live in Heroku config vars
+.env

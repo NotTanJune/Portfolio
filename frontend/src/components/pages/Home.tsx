@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView as fmUseInView, useReducedMotion } from 'framer-motion';
 import ScrollReveal from '../ScrollReveal';
@@ -10,6 +10,8 @@ import CircularCarousel from '../CircularCarousel';
 import { SOCIAL_LINKS } from '../../socialLinks';
 import { colors, CARD_RADIUS, AnimatedSection, AnimationContext } from '../../App';
 import { XIcon } from '../Icons';
+
+const RepoCity = React.lazy(() => import('../../city/RepoCity'));
 
 const profileImages = [
   { src: '/images/profile/pfp.webp', alt: 'Tanmay Nargas, AI engineer', title: 'AI Engineer' },
@@ -655,6 +657,12 @@ const Home: React.FC = () => {
           </h2>
         </div>
         </AnimatedSection>
+
+        <div style={{ marginBottom: isMobile ? '40px' : '60px', minHeight: isMobile ? 540 : 640 }}>
+          <Suspense fallback={null}>
+            <RepoCity />
+          </Suspense>
+        </div>
 
         <AnimatedContent>
         <div style={{

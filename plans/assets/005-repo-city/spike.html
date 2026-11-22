@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repo city: retro touches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+  :root { --page:#f0efeb; --ink:#344e41; --ink-soft:#4d6650; --line:#b6b09c; --accent:#588157; }
+  * { box-sizing: border-box; }
+  html { background: var(--page); }
+  body { margin:0; padding:36px clamp(16px,3vw,40px) 56px; font-family:'Bricolage Grotesque','Avenir Next','Trebuchet MS',sans-serif; color:var(--ink); background:var(--page); }
+  ::selection { background:#a3b18a; color:#1a2419; }
+  .wrap { max-width:1100px; margin:0 auto; }
+  h1 { margin:0 0 8px; font-size:clamp(1.9rem,3.2vw,2.8rem); font-weight:700; letter-spacing:-0.03em; line-height:1.05; text-wrap:balance; }
+  .key { margin:0 0 20px; max-width:62ch; font-size:1.02rem; line-height:1.5; color:var(--ink-soft); }
+  .panel { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#f8f7f5; }
+  .stage { position:relative; display:flex; align-items:center; justify-content:center; padding:12px 0; background:#dad7cd; transition:background .35s ease; }
+  .stage canvas { display:block; cursor:crosshair; }
+  .stage .none { padding:80px 24px; color:var(--ink-soft); }
+  .tip { position:absolute; left:0; top:0; padding:5px 10px 6px; border-radius:6px; font-size:.86rem; font-weight:600; line-height:1.2; white-space:nowrap; pointer-events:none; transform:translate(-50%,-100%); background:#1a2419; color:#f0efeb; }
+  .tip span { font-weight:400; opacity:.8; }
+  .tip::after { content:''; position:absolute; left:50%; top:100%; width:2px; height:8px; margin-left:-1px; background:#1a2419; }
+  .tip.pixel { font-family:'Silkscreen','Courier New',monospace; font-weight:400; font-size:.78rem; letter-spacing:0; border-radius:0; padding:5px 8px 4px; border:2px solid #1a2419; background:#f0efeb; color:#1a2419; }
+  .tip.pixel span { opacity:1; color:#4d6650; }
+  .night .tip { background:#f0efeb; color:#1a2419; }
+  .night .tip::after { background:#f0efeb; }
+  .night .tip.pixel { background:#1a2419; color:#f0efeb; border-color:#f0efeb; }
+  .night .tip.pixel span { color:#a3b18a; }
+  .controls { display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; padding:14px; border-top:1px solid var(--line); }
+  .sw { flex:1 1 200px; display:flex; flex-direction:column; justify-content:flex-start; text-align:left; font:inherit; color:var(--ink); background:#f0efeb; border:1px solid var(--line); border-radius:10px; padding:11px 14px 12px; cursor:pointer; transition:background .2s ease, border-color .2s ease, color .2s ease; }
+  .sw b { display:flex; align-items:center; justify-content:space-between; gap:10px; font-weight:700; font-size:1.02rem; letter-spacing:-0.01em; }
+  .sw b::after { content:'off'; font-weight:600; font-size:.8rem; padding:2px 8px 3px; border-radius:999px; border:1px solid currentColor; opacity:.7; }
+  .sw small { display:block; margin-top:4px; font-size:.9rem; line-height:1.4; color:var(--ink-soft); }
+  .sw:hover { border-color:var(--accent); }
+  .sw:focus-visible, .theme button:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  .sw[aria-pressed="true"] { background:var(--ink); border-color:var(--ink); color:#f0efeb; }
+  .sw[aria-pressed="true"] b::after { content:'on'; opacity:1; }
+  .sw[aria-pressed="true"] small { color:#cfd6c4; }
+  .top { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px 32px; }
+  .theme { display:inline-flex; padding:3px; margin-bottom:20px; border:1px solid var(--line); border-radius:999px; background:#f8f7f5; }
+  .theme button { font:inherit; font-weight:600; font-size:.95rem; color:var(--ink-soft); background:none; border:0; padding:8px 18px; border-radius:999px; cursor:pointer; transition:background .2s ease,color .2s ease; }
+  .theme button[aria-pressed="true"] { background:var(--ink); color:#f0efeb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Smooth, with some grit</h1>
+      <p class="key">Four retro touches on the smooth city. Switch them on and off, hover a building, and tell me which to keep.</p>
+    </div>
+    <div class="theme" role="group" aria-label="Theme">
+      <button type="button" data-theme="maquette" aria-pressed="true">Light</button>
+      <button type="button" data-theme="night" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="stage"><canvas id="gl"></canvas><div class="tip pixel"></div></div>
+    <div class="controls">
+      <button class="sw" type="button" data-opt="dither" data-choice="dither" aria-pressed="true"><b>Dithered shading</b><small>Shadows and mid-tones become checker patterns, so the palette stays tiny.</small></button>
+      <button class="sw" type="button" data-opt="outline" data-choice="outline" aria-pressed="false"><b>Ink outlines</b><small>A one-pixel dark line around every building, like a sprite sheet.</small></button>
+      <button class="sw" type="button" data-opt="step" data-choice="step" aria-pressed="false"><b>Click-turn</b><small>The city rests on eight views and snaps a notch between them.</small></button>
+      <button class="sw" type="button" data-opt="type" data-choice="type" aria-pressed="true"><b>Pixel lettering</b><small>Building labels set in a bitmap face with square corners.</small></button>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+/* ---------- data: rule B applied to the real repo list (2026-11-21) ---------- */
+// [name, language, sizeKB, daysSincePush, stars]
+const REPOS = [
+  ['pdfcraft','Rust',117411,1,0], ['locator','Rust',79675,5,18],
+  ['OpenLogi','Rust',60781,6,0], ['AI6101','Rust',41691,25,0],
+  ['AI6102-ML','Jupyter',33222,365,0], ['murmur','Swift',16495,0,0], ['GrAD','Python',6701,460,2],
+  ['fixpath','Python',5071,19,0], ['branch-to-the-future','Rust',4578,5,0], ['anglerfish','TypeScript',4266,236,0],
+  ['Portfolio','TypeScript',2279,2,1], ['AI6131-3D-Deep-Learning','Python',2037,180,0], ['cycleit','TypeScript',1314,300,0],
+  ['AI6103','Jupyter',941,362,0], ['crack-detection','Jupyter',778,5,1], ['ProfileQuest','JavaScript',425,5,0],
+  ['Nightingale','TypeScript',299,285,0], ['DevDex','Python',234,264,2], ['pdocf','Swift',112,20,0],
+  ['BookMyTicket','C++',38,433,1], ['juice','Swift',23,1,0], ['Harbour','HTML',13,405,1],
+  ['RemoteControlRobot','Python',2,432,1],
+];
+
+/* ---------- small helpers ---------- */
+const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; };
+const rng = (seed) => { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); };
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a, b, t) => [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * t));
+const pack = (c) => (255 << 24 | c[2] << 16 | c[1] << 8 | c[0]) >>> 0;
+const litChance = (days) => days <= 7 ? .72 : days <= 30 ? .45 : days <= 120 ? .2 : days <= 365 ? .08 : .02;
+
+const BW = 208, BH = 156, SQ = 0.6;         // buffer size, camera squash
+const LOT = 16, ROAD = 5, COLS = 6, ROWS = 5;
+const GW = COLS * LOT + (COLS + 1) * ROAD, GD = ROWS * LOT + (ROWS + 1) * ROAD;
+
+/* ---------- style definitions ---------- */
+const STYLES = {
+  maquette: {
+    shadow: '#344e41', highlight: '#ffffff', outline: '#344e41',
+    ground: { lot: '#cfcabb', road: '#b6b09c', dash: '#dad7cd', grass: '#a3b18a', soil: '#8c8672', lamp: null },
+    lang: {
+      Rust: { wall: '#588157', roof: '#3a5a40' }, Swift: { wall: '#f0efeb', roof: '#dad7cd' },
+      TypeScript: { wall: '#a3b18a', roof: '#588157' }, JavaScript: { wall: '#a3b18a', roof: '#f0efeb' },
+      Python: { wall: '#c9c2ad', roof: '#a3b18a' }, Jupyter: { wall: '#c9c2ad', roof: '#588157' },
+      'C++': { wall: '#b6b09c', roof: '#f0efeb' }, HTML: { wall: '#f0efeb', roof: '#a3b18a' },
+    },
+    window: '#344e41', windowLit: '#f6d98b', trimMix: .18, rimEmissive: false,
+    types: { default: ['tower', 'step', 'ell'] }, props: ['antenna'],
+    leaf: '#588157', trunk: '#6b5f45',
+  },
+  night: {
+    shadow: '#070b08', highlight: '#5b7a66', outline: '#f0efeb',
+    ground: { lot: '#202c22', road: '#141c15', dash: '#3d4f40', grass: '#243524', soil: '#0f1810', lamp: '#ffd98a' },
+    lang: {
+      Rust: { wall: '#2b3a30', rim: '#ff7a45' }, Swift: { wall: '#30403a', rim: '#ff5d73' },
+      TypeScript: { wall: '#27363a', rim: '#4da3ff' }, JavaScript: { wall: '#2f3a2c', rim: '#ffe14d' },
+      Python: { wall: '#27363a', rim: '#5fe0b7' }, Jupyter: { wall: '#33392b', rim: '#ffa24d' },
+      'C++': { wall: '#2b3338', rim: '#c59cff' }, HTML: { wall: '#33323a', rim: '#ff8fd0' },
+    },
+    window: '#121a14', windowLit: '#ffd98a', windowLitAlt: '#9fe6ff', trimMix: .25, rimEmissive: true,
+    types: { default: ['tower', 'step', 'ell'] }, props: ['antenna', 'beacon'],
+    leaf: '#2f4a33', trunk: '#1c241c',
+  },
+  toytown: {
+    shadow: '#3b2f4a', highlight: '#fff6dc', outline: '#2b2740',
+    ground: { lot: '#e2d7bd', road: '#6a6678', dash: '#f3ead7', grass: '#8fbf6b', soil: '#8a6f55', lamp: null },
+    lang: {
+      Rust: { wall: '#b5543b', roof: '#5d3b3a' }, Swift: { wall: '#f2784b', roof: '#f3ead7' },
+      TypeScript: { wall: '#3b6ea5', roof: '#f3ead7' }, JavaScript: { wall: '#e9c341', roof: '#4a4560' },
+      Python: { wall: '#3f9a8f', roof: '#f3ead7' }, Jupyter: { wall: '#e98a3c', roof: '#f3ead7' },
+      'C++': { wall: '#8b8d9c', roof: '#4a4560' }, HTML: { wall: '#d86a8c', roof: '#f3ead7' },
+    },
+    window: '#2f3350', windowLit: '#fff0a8', trimMix: .2, rimEmissive: false,
+    types: { Rust: ['factory'], Swift: ['step'], TypeScript: ['slab', 'ell'], JavaScript: ['slab'], Python: ['round'], Jupyter: ['dome'], 'C++': ['tower'], HTML: ['tower'], default: ['tower'] },
+    props: ['antenna', 'tank'],
+    leaf: '#5fa052', trunk: '#7a5a3c',
+  },
+};
+
+/* ---------- voxel model builder ----------
+   kindFn(x,y,z) -> 0 empty, or a kind id.  paint(v) -> material id (may set v.mask).
+   mask bits: 1 = -x, 2 = +x, 4 = -y, 8 = +y, set when open air is within 2 px that way,
+   so the 2 px rim of every slice carries the wall colour (a squashed slice shows ~1.7 px of its edge). */
+function buildModel(w, d, H, kindFn, paint) {
+  const n = w * d, kind = new Uint8Array(H * n), mat = new Uint8Array(H * n), mask = new Uint8Array(H * n);
+  for (let z = 0; z < H; z++) for (let y = 0; y < d; y++) for (let x = 0; x < w; x++) kind[(z * d + y) * w + x] = kindFn(x, y, z) | 0;
+  const at = (x, y, z) => (x < 0 || y < 0 || x >= w || y >= d || z >= H) ? 0 : kind[(z * d + y) * w + x];
+  const v = {};
+  for (let z = 0; z < H; z++) for (let y = 0; y < d; y++) for (let x = 0; x < w; x++) {
+    const i = (z * d + y) * w + x, k = kind[i];
+    if (!k) continue;
+    let m = 0;
+    if (!at(x - 1, y, z) || !at(x - 2, y, z)) m |= 1;
+    if (!at(x + 1, y, z) || !at(x + 2, y, z)) m |= 2;
+    if (!at(x, y - 1, z) || !at(x, y - 2, z)) m |= 4;
+    if (!at(x, y + 1, z) || !at(x, y + 2, z)) m |= 8;
+    v.kind = k; v.x = x; v.y = y; v.z = z; v.mask = m; v.top = !at(x, y, z + 1);
+    v.single = m === 1 || m === 2 || m === 4 || m === 8;
+    v.t = (m & 3) ? y : x;                 // coordinate running along the wall
+    v.tLen = (m & 3) ? d : w;
+    mat[i] = paint(v);
+    mask[i] = v.mask;
+  }
+  return { w, d, H, mat, mask, z0: 0 };
+}
+
+/* ---------- scene ---------- */
+function makeScene(key) {
+  const S = STYLES[key];
+  const shadow = hex(S.shadow), highlight = hex(S.highlight);
+  const colors = [0, 0, 0, 0];            // 4 tones per material: top, lit, mid, shade
+  const blinkers = [];
+  const cache = new Map();
+  const M = (h, o = {}) => {
+    const id = h + (o.emissive ? 'e' : '') + (o.blink ? 'b' : '');
+    if (cache.has(id)) return cache.get(id);
+    const c = hex(h), n = colors.length / 4;
+    if (o.emissive) colors.push(pack(c), pack(c), pack(c), pack(c));
+    else colors.push(pack(mix(c, highlight, .16)), pack(c), pack(mix(c, shadow, .2)), pack(mix(c, shadow, .42)));
+    if (o.blink) blinkers.push({ n, on: pack(c), off: pack(mix(c, shadow, .75)) });
+    cache.set(id, n);
+    return n;
+  };
+
+  /* ground plate */
+  const G = S.ground;
+  const gm = { lot: M(G.lot), road: M(G.road), dash: M(G.dash), grass: M(G.grass), soil: M(G.soil), lamp: G.lamp ? M(G.lamp, { emissive: true }) : 0 };
+  const lots = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) lots.push({ c, r, x: ROAD + c * (LOT + ROAD), y: ROAD + r * (LOT + ROAD) });
+  const order = lots.slice().sort((a, b) => {
+    const da = Math.hypot(a.c - (COLS - 1) / 2, (a.r - (ROWS - 1) / 2) * 1.15), db = Math.hypot(b.c - (COLS - 1) / 2, (b.r - (ROWS - 1) / 2) * 1.15);
+    return da - db || hash('lot' + a.c + a.r) - hash('lot' + b.c + b.r);
+  });
+  const placed = REPOS.map((r, i) => ({ repo: r, lot: order[i] }));
+  const parks = new Set(order.slice(REPOS.length));
+
+  const ground = buildModel(GW, GD, 3, () => 1, (v) => {
+    if (v.z < 2) return gm.soil;
+    v.mask = 0;
+    const cx = (v.x % (LOT + ROAD)), cy = (v.y % (LOT + ROAD));
+    const onRoadX = cx < ROAD, onRoadY = cy < ROAD;
+    if (onRoadX || onRoadY) {
+      if (gm.lamp && onRoadX && onRoadY && cx === 2 && cy === 2) return gm.lamp;
+      if (onRoadX && !onRoadY && cx === 2 && (v.y % 4) < 2) return gm.dash;
+      if (onRoadY && !onRoadX && cy === 2 && (v.x % 4) < 2) return gm.dash;
+      return gm.road;
+    }
+    const lot = lots[Math.floor(v.y / (LOT + ROAD)) * COLS + Math.floor(v.x / (LOT + ROAD))];
+    return parks.has(lot) ? gm.grass : gm.lot;
+  });
+  ground.z0 = -2; ground.isGround = true;
+
+  /* buildings */
+  const items = [];
+  const winDark = M(S.window), winLit = M(S.windowLit, { emissive: true }), winLitAlt = S.windowLitAlt ? M(S.windowLitAlt, { emissive: true }) : winLit;
+  const metal = M(key === 'night' ? '#4a5c4d' : '#6f7469');
+  const beacon = M('#ff5a4d', { emissive: true, blink: key === 'night' });
+
+  for (const { repo, lot } of placed) {
+    const [name, lang, size, days, stars] = repo;
+    const R = rng(hash(name));
+    const L = S.lang[lang] || S.lang.TypeScript;
+    const types = S.types[lang] || S.types.default;
+    const type = types[Math.floor(R() * types.length)];
+    const lg = Math.log10(size + 1), h = Math.round(6 + 1.25 * lg * lg);
+    let w = 9 + Math.floor(R() * 5), d = 9 + Math.floor(R() * 5);
+    if (type === 'slab') { w = 14; d = 8 + Math.floor(R() * 2); if (R() < .5) [w, d] = [d, w]; }
+    if (type === 'round' || type === 'dome') { w = d = 10 + Math.floor(R() * 2) * 2; }
+    if (type === 'factory') { w = 13 + Math.floor(R() * 2); d = 11 + Math.floor(R() * 3); }
+    const propList = S.props, prop = h > 14 && R() < .6 ? propList[Math.floor(R() * propList.length)] : (stars > 1 ? 'antenna' : null);
+    const extra = prop ? 6 : 0;
+    const H = h + extra;
+    const wall = M(L.wall), trim = M('#' + mix(hex(L.wall), shadow, S.trimMix).map(n => n.toString(16).padStart(2, '0')).join(''));
+    const roof = M(L.roof || '#' + mix(hex(L.wall), shadow, .35).map(n => n.toString(16).padStart(2, '0')).join(''));
+    const rim = L.rim ? M(L.rim, { emissive: true }) : trim;
+    const chimney = M(key === 'toytown' ? '#7c3a2e' : S.window);
+    const pLit = litChance(days), seed = hash(name);
+    const cx = (w - 1) / 2, cy = (d - 1) / 2, rad = Math.min(w, d) / 2;
+    const bodyH = type === 'factory' ? Math.max(5, Math.round(h * .62)) : h;
+    const chX = w - 4, chY = 1;                                   // chimney corner
+    const podium = Math.max(4, Math.round(h * .42)), ellW = Math.ceil(w * .58);
+
+    const kindFn = (x, y, z) => {
+      if (z >= h) {                                                // props above the roof
+        const pz = z - h, mx = Math.floor(w / 2), my = Math.floor(d / 2);
+        if (prop === 'antenna') return (x === mx && y === my && pz < 5) ? (pz === 4 ? 4 : 3) : 0;
+        if (prop === 'beacon') return (x === mx && y === my && pz < 4) ? (pz === 3 ? 4 : 3) : 0;
+        if (prop === 'tank') { const dx = x - mx, dy = y - my; if (pz === 0) return (Math.abs(dx) === 1 && Math.abs(dy) === 1) ? 3 : 0; return (pz < 4 && Math.abs(dx) <= 1 && Math.abs(dy) <= 1) ? 5 : 0; }
+        return 0;
+      }
+      if (type === 'round' || type === 'dome') {
+        let r = rad;
+        if (type === 'dome' && z > h - rad) { const k = z - (h - rad); r = Math.sqrt(Math.max(0, rad * rad - k * k)); }
+        return Math.hypot(x - cx, y - cy) <= r - .2 ? 1 : 0;
+      }
+      if (type === 'factory') {
+        if (x >= chX && x < chX + 3 && y >= chY && y < chY + 3) return z < bodyH ? 1 : 2;
+        if (z >= bodyH) return 0;
+        if (z >= bodyH - 2) return ((x + (bodyH - z)) % 4 < 2 + (bodyH - 1 - z)) ? 1 : 0;   // saw-tooth roof
+        return 1;
+      }
+      if (type === 'ell') return (z < podium || x < ellW) ? 1 : 0;
+      let inset = 0;
+      if (type === 'step') inset = z > h * .82 ? 2 : z > h * .56 ? 1 : 0;
+      return (x >= inset && y >= inset && x < w - inset && y < d - inset) ? 1 : 0;
+    };
+
+    const paint = (v) => {
+      if (v.kind === 3) return metal;
+      if (v.kind === 4) return beacon;
+      if (v.kind === 5) return v.top ? roof : trim;
+      if (v.kind === 2) return v.top ? M(S.window) : chimney;
+      if (v.mask === 0) return roof;
+      if (v.top) return rim;                                       // parapet
+      if (v.z < 2) return trim;                                    // ground floor
+      const floor = Math.floor(v.z / 4);
+      if (v.single && (v.z % 4 === 1 || v.z % 4 === 2) && v.t % 2 === 1 && v.t > 0 && v.t < v.tLen - 1) {
+        const hv = hash(seed + ':' + v.mask + ':' + floor + ':' + v.t) / 4294967296;
+        if (hv < pLit) return (hv * 97 % 1) < .22 ? winLitAlt : winLit;
+        return winDark;
+      }
+      return wall;
+    };
+
+    const model = buildModel(w, d, H, kindFn, paint);
+    const gx = lot.x + Math.floor((LOT - w) / 2), gy = lot.y + Math.floor((LOT - d) / 2);
+    items.push({ model, x: gx + w / 2 - GW / 2, y: gy + d / 2 - GD / 2, gx, gy, w, d, h: bodyH, top: H, repo: { name, lang, days } });
+  }
+
+  /* trees in the park lots */
+  const leaf = M(S.leaf), trunk = M(S.trunk);
+  for (const lot of parks) {
+    const R = rng(hash('park' + lot.c + lot.r));
+    const n = 2 + Math.floor(R() * 2);
+    for (let i = 0; i < n; i++) {
+      const r = 2 + Math.floor(R() * 2), w = r * 2 + 1, H = r * 2 + 4;
+      const model = buildModel(w, w, H, (x, y, z) => {
+        if (z < 3) return (x === r && y === r) ? 2 : 0;
+        return Math.hypot(x - r, y - r, (z - 3 - r) * 1.05) <= r + .1 ? 1 : 0;
+      }, (v) => v.kind === 2 ? trunk : leaf);
+      const gx = lot.x + 1 + Math.floor(R() * (LOT - w - 2)), gy = lot.y + 1 + Math.floor(R() * (LOT - w - 2));
+      items.push({ model, x: gx + w / 2 - GW / 2, y: gy + w / 2 - GD / 2, gx: gx + r - 1, gy: gy + r - 1, w: 3, d: 3, h: H - 2, top: H, repo: null });
+    }
+  }
+
+  return { S, colors: new Uint32Array(colors), blinkers, ground, items, shadowMask: new Uint8Array(GW * GD) };
+}
+
+/* ---------- software sprite-stack rasteriser (nearest neighbour, whole pixels) ---------- */
+const NORMALS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const LIGHT = [-0.99, 0.14];               // screen-space: from the left, a touch toward the viewer
+
+function drawModel(m, sx, sy, cos, sin, tones, colors, buf, ids, id, shadowMask) {
+  const r = Math.ceil(Math.hypot(m.w, m.d) / 2) + 1, ry = Math.ceil(r * SQ) + 1;
+  const hw = m.w / 2, hd = m.d / 2, x0 = Math.max(0, Math.floor(sx - r)), x1 = Math.min(BW - 1, Math.ceil(sx + r));
+  for (let z = 0; z < m.H; z++) {
+    const cyz = sy - z - m.z0, zo = z * m.d;
+    const y0 = Math.max(0, Math.floor(cyz - ry)), y1 = Math.min(BH - 1, Math.ceil(cyz + ry));
+    const groundTop = shadowMask && z === m.H - 1;
+    for (let py = y0; py <= y1; py++) {
+      const dy = (py + .5 - cyz) / SQ, row = py * BW;
+      for (let px = x0; px <= x1; px++) {
+        const dx = px + .5 - sx;
+        const mx = Math.floor(cos * dx + sin * dy + hw), my = Math.floor(-sin * dx + cos * dy + hd);
+        if (mx < 0 || my < 0 || mx >= m.w || my >= m.d) continue;
+        const i = (zo + my) * m.w + mx, mat = m.mat[i];
+        if (!mat) continue;
+        const tone = groundTop ? (shadowMask[my * m.w + mx] ? 3 : 0) : tones[m.mask[i]];
+        buf[row + px] = colors[mat * 4 + tone];
+        ids[row + px] = id;
+      }
+    }
+  }
+}
+
+function renderScene(sc, theta, time, view) {
+  const { buf, ids } = view;
+  buf.fill(0); ids.fill(0);
+  const cos = Math.cos(theta), sin = Math.sin(theta);
+
+  // which tone each face shows at this angle (light is fixed to the camera)
+  const faceTone = [], faceCam = [];
+  for (const [nx, ny] of NORMALS) {
+    const rx = cos * nx - sin * ny, ryy = sin * nx + cos * ny, b = rx * LIGHT[0] + ryy * LIGHT[1];
+    faceTone.push(b > .3 ? 1 : b > -.45 ? 2 : 3); faceCam.push(ryy);
+  }
+  const tones = new Uint8Array(16);
+  for (let m = 1; m < 16; m++) { let best = -9, t = 2; for (let f = 0; f < 4; f++) if (m & (1 << f) && faceCam[f] > best) { best = faceCam[f]; t = faceTone[f]; } tones[m] = t; }
+
+  sc.tones = tones;
+  // ground shadows, stamped in model space away from the light
+  const sm = sc.shadowMask; sm.fill(0);
+  const sdx = cos * -LIGHT[0] + sin * -LIGHT[1], sdy = -sin * -LIGHT[0] + cos * -LIGHT[1];
+  for (const it of sc.items) {
+    const len = Math.round(it.h * .5);
+    for (let t = 1; t <= len; t++) {
+      const ox = Math.round(it.gx + sdx * t), oy = Math.round(it.gy + sdy * t);
+      for (let y = Math.max(0, oy); y < Math.min(GD, oy + it.d); y++) for (let x = Math.max(0, ox); x < Math.min(GW, ox + it.w); x++) sm[y * GW + x] = 1;
+    }
+  }
+
+  for (const b of sc.blinkers) { const c = (time % 1600) < 800 ? b.on : b.off; sc.colors[b.n * 4] = sc.colors[b.n * 4 + 1] = sc.colors[b.n * 4 + 2] = sc.colors[b.n * 4 + 3] = c; }
+
+  const CX = BW / 2, CY = BH - 57;
+  drawModel(sc.ground, CX, CY, cos, sin, tones, sc.colors, buf, ids, 0, sm);
+  const order = sc.items.map((it, i) => ({ it, i, sx: CX + cos * it.x - sin * it.y, sy: CY + (sin * it.x + cos * it.y) * SQ })).sort((a, b) => a.sy - b.sy);
+  for (const o of order) { drawModel(o.it.model, o.sx, o.sy, cos, sin, tones, sc.colors, buf, ids, o.i + 1, null); o.it.sx = o.sx; o.it.sy = o.sy; }
+
+  // outline the finished stack of the hovered building, once
+  if (view.hover && !view.noOutline) {
+    const hid = view.hover, oc = pack(hex(sc.S.outline));
+    for (let y = 1; y < BH - 1; y++) for (let x = 1; x < BW - 1; x++) {
+      const p = y * BW + x;
+      if (ids[p] !== hid && (ids[p - 1] === hid || ids[p + 1] === hid || ids[p - BW] === hid || ids[p + BW] === hid)) buf[p] = oc;
+    }
+  }
+  view.ctx.putImageData(view.img, 0, 0);
+}
+
+
+/* ---------- WebGL2: pass 1 draws the stacked slices (+ item id in alpha), pass 2 inks outlines ---------- */
+const VS = `#version 300 es
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec4 aItem;   // centre x, centre y, z, id + 0.5 * ground-top
+layout(location=2) in vec4 aRect;   // w, d, atlas x, atlas y
+uniform vec2 uRot, uView, uCenter;
+out vec2 vUV; flat out float vFlag; flat out float vId; flat out float vZ; flat out vec4 vRect;
+void main() {
+  vec2 p = aItem.xy + (aCorner - 0.5) * aRect.xy;
+  vec2 r = vec2(uRot.x * p.x - uRot.y * p.y, uRot.y * p.x + uRot.x * p.y);
+  vec2 s = vec2(uCenter.x + r.x, uCenter.y + r.y * ${SQ.toFixed(2)} - aItem.z);
+  gl_Position = vec4(s.x / uView.x * 2.0 - 1.0, 1.0 - s.y / uView.y * 2.0, -(0.8 * r.y + 0.6 * aItem.z) / 400.0, 1.0);
+  vUV = aRect.zw + aCorner * aRect.xy; vId = floor(aItem.w); vFlag = fract(aItem.w); vZ = ceil(aItem.z); vRect = aRect;
+}`;
+const FS = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uAtlas, uPal, uShadow;
+uniform int uTones[16];
+uniform int uDither;
+in vec2 vUV; flat in float vFlag; flat in float vId; flat in float vZ; flat in vec4 vRect;
+out vec4 o;
+void main() {
+  ivec2 org = ivec2(vRect.zw);
+  ivec2 tc = clamp(ivec2(floor(vUV)), org, org + ivec2(vRect.xy) - 1);
+  vec4 t = texelFetch(uAtlas, tc, 0);
+  int mat = int(t.r * 255.0 + 0.5);
+  if (mat == 0) discard;
+  ivec2 l = tc - org;
+  bool chk = ((l.x + l.y + int(vZ) + 64) & 1) == 0;
+  int tone;
+  if (vFlag > 0.25) {
+    bool sh = texelFetch(uShadow, l, 0).r > 0.0;
+    tone = sh ? ((uDither == 1 && chk) ? 0 : 3) : 0;
+  } else {
+    tone = uTones[int(t.g * 255.0 + 0.5)];
+    if (uDither == 1 && tone == 2) tone = chk ? 1 : 3;
+  }
+  o = vec4(texelFetch(uPal, ivec2(tone, mat), 0).rgb, vId / 255.0);
+}`;
+const VS2 = `#version 300 es
+void main() { vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0); gl_Position = vec4(p, 0.0, 1.0); }`;
+const FS2 = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uScene; uniform int uOutline, uHover, uK; uniform vec3 uInk, uHoverInk;
+out vec4 o;
+int idAt(ivec2 p) { ivec2 sz = textureSize(uScene, 0); if (p.x < 0 || p.y < 0 || p.x >= sz.x || p.y >= sz.y) return 0; return int(texelFetch(uScene, p, 0).a * 255.0 + 0.5); }
+void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec4 c = texelFetch(uScene, p, 0);
+  int id = int(c.a * 255.0 + 0.5);
+  bool edge = false, hov = false;
+  for (int i = 0; i < 4; i++) {
+    ivec2 off = i == 0 ? ivec2(uK, 0) : i == 1 ? ivec2(0, uK) : i == 2 ? ivec2(-uK, 0) : ivec2(0, -uK);
+    int n = idAt(p + off);
+    if (uOutline == 1 && i < 2 && n != id) edge = true;
+    if (uHover > 0 && n == uHover && id != uHover) hov = true;
+  }
+  if (hov) o = vec4(uHoverInk, 1.0); else if (edge) o = vec4(uInk, 1.0); else if (id == 0) o = vec4(0.0); else o = vec4(c.rgb, 1.0);
+}`;
+
+function makeGL(canvas, scenes) {
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: true });
+  if (!gl) return null;
+  const sh = (type, text) => { const s = gl.createShader(type); gl.shaderSource(s, text); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const program = (v, f) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, v)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, f)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; };
+  const p1 = program(VS, FS), p2 = program(VS2, FS2);
+  const U1 = (n) => gl.getUniformLocation(p1, n), U2 = (n) => gl.getUniformLocation(p2, n);
+  gl.useProgram(p1); gl.uniform1i(U1('uAtlas'), 0); gl.uniform1i(U1('uPal'), 1); gl.uniform1i(U1('uShadow'), 2);
+  gl.useProgram(p2); gl.uniform1i(U2('uScene'), 3);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  const tex = (unit, ifmt, w, h, fmt, data) => {
+    const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, gl.UNSIGNED_BYTE, data);
+    for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
+    for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE);
+    return t;
+  };
+  const corner = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+  const emptyVAO = gl.createVertexArray();
+
+  const res = {};
+  for (const key in scenes) {
+    const sc = scenes[key];
+    const entries = [{ m: sc.ground, x: 0, y: 0, id: 1 }, ...sc.items.map((it, i) => ({ m: it.model, x: it.x, y: it.y, id: i + 2 }))];
+    const AW = 1024; let px = 0, py = 0, rowH = 0;
+    for (const e of entries) { const tw = e.m.w * e.m.H; if (px + tw > AW) { px = 0; py += rowH; rowH = 0; } e.ax = px; e.ay = py; px += tw; rowH = Math.max(rowH, e.m.d); }
+    const AH = py + rowH, data = new Uint8Array(AW * AH * 2), inst = [];
+    for (const e of entries) {
+      const m = e.m;
+      for (let z = 0; z < m.H; z++) {
+        for (let y = 0; y < m.d; y++) for (let x = 0; x < m.w; x++) { const i = (z * m.d + y) * m.w + x, o = ((e.ay + y) * AW + e.ax + z * m.w + x) * 2; data[o] = m.mat[i]; data[o + 1] = m.mask[i]; }
+        const top = (m.isGround && z === m.H - 1) ? .5 : 0;
+        if (z > 0) inst.push(e.x, e.y, z + m.z0 - .5, e.id, m.w, m.d, e.ax + z * m.w, e.ay);   // half-step copy closes the gap under 1 px features
+        inst.push(e.x, e.y, z + m.z0, e.id + top, m.w, m.d, e.ax + z * m.w, e.ay);
+      }
+    }
+    const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, corner); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ib); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(inst), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 32, 0); gl.vertexAttribDivisor(1, 1);
+    gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 32, 16); gl.vertexAttribDivisor(2, 1);
+    gl.bindVertexArray(null);
+    res[key] = { vao, count: inst.length / 8,
+      atlas: tex(0, gl.RG8, AW, AH, gl.RG, data),
+      pal: tex(1, gl.RGBA8, 4, sc.colors.length / 4, gl.RGBA, new Uint8Array(sc.colors.buffer)),
+      shadow: tex(2, gl.R8, GW, GD, gl.RED, sc.shadowMask) };
+  }
+  const fbo = gl.createFramebuffer(); let sceneTex = null, depthRB = null;
+  const uRot = U1('uRot'), uView = U1('uView'), uCenter = U1('uCenter'), uTones = U1('uTones'), uDither = U1('uDither');
+  const uOutline = U2('uOutline'), uHover = U2('uHover'), uK = U2('uK'), uInk = U2('uInk'), uHoverInk = U2('uHoverInk');
+  gl.depthFunc(gl.LEQUAL); gl.clearColor(0, 0, 0, 0);
+  return {
+    resize(w, h) {
+      canvas.width = w; canvas.height = h;
+      if (sceneTex) gl.deleteTexture(sceneTex); if (depthRB) gl.deleteRenderbuffer(depthRB);
+      sceneTex = tex(3, gl.RGBA8, w, h, gl.RGBA, null);
+      depthRB = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, depthRB); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, w, h);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sceneTex, 0);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRB);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    },
+    draw(key, theta, o) {          // call right after the CPU pass: reuses its tones, shadow mask and blink state
+      const sc = scenes[key], r = res[key];
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.enable(gl.DEPTH_TEST); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(p1);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, r.atlas);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, r.pal);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4, sc.colors.length / 4, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(sc.colors.buffer));
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, r.shadow);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, GW, GD, gl.RED, gl.UNSIGNED_BYTE, sc.shadowMask);
+      gl.uniform2f(uRot, Math.cos(theta), Math.sin(theta)); gl.uniform2f(uView, BW, BH); gl.uniform2f(uCenter, BW / 2, BH - 57);
+      gl.uniform1iv(uTones, new Int32Array(sc.tones)); gl.uniform1i(uDither, o.dither ? 1 : 0);
+      gl.bindVertexArray(r.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, r.count);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.disable(gl.DEPTH_TEST); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(p2);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+      gl.uniform1i(uOutline, o.outline ? 1 : 0); gl.uniform1i(uHover, o.hover); gl.uniform1i(uK, o.k);
+      gl.uniform3fv(uInk, o.ink); gl.uniform3fv(uHoverInk, o.hoverInk);
+      gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    },
+  };
+}
+
+/* ---------- wire up ---------- */
+const scenes = { maquette: makeScene('maquette'), night: makeScene('night') };
+const BG = { maquette: '#dad7cd', night: '#1a2419' };
+const INK = { maquette: hex('#2c4237').map(v => v / 255), night: hex('#070b08').map(v => v / 255) };
+const HOVER_INK = { maquette: hex('#1a2419').map(v => v / 255), night: hex('#f0efeb').map(v => v / 255) };
+const opts = { dither: true, outline: false, step: false, type: true };
+let theme = 'maquette';
+const glC = document.getElementById('gl'), stage = glC.parentElement, tip = stage.querySelector('.tip');
+const off = document.createElement('canvas'); off.width = BW; off.height = BH;
+const octx = off.getContext('2d'), img = octx.createImageData(BW, BH);
+const cpu = { canvas: off, ctx: octx, img, buf: new Uint32Array(img.data.buffer), ids: new Uint8Array(BW * BH), hover: 0, noOutline: true };
+let glv = null;
+try { glv = makeGL(glC, scenes); } catch (e) { console.error(e); }
+if (!glv) { glC.outerHTML = '<p class="none">WebGL2 is not available in this browser.</p>'; tip.hidden = true; }
+let scale = 1, kpx = 1;
+const fit = () => {
+  if (!glv) return;
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  scale = Math.max(1, Math.min(5, Math.floor(stage.clientWidth / BW), Math.floor((window.innerHeight - 330) / BH)));
+  kpx = Math.max(1, Math.round(scale * dpr));
+  glC.style.width = BW * scale + 'px'; glC.style.height = BH * scale + 'px';
+  glv.resize(BW * kpx, BH * kpx);
+};
+fit(); addEventListener('resize', fit);
+
+for (const b of document.querySelectorAll('.theme button')) b.addEventListener('click', () => {
+  theme = b.dataset.theme;
+  for (const o of document.querySelectorAll('.theme button')) o.setAttribute('aria-pressed', String(o === b));
+  stage.style.background = BG[theme]; stage.classList.toggle('night', theme === 'night');
+});
+let theta = .62, base = .62, stepT = 0, paused = false, hover = 0;
+for (const b of document.querySelectorAll('.sw')) b.addEventListener('click', () => {
+  const k = b.dataset.opt; opts[k] = !opts[k]; b.setAttribute('aria-pressed', String(opts[k]));
+  if (k === 'step') { base = theta; stepT = 0; }
+  if (k === 'type') tip.classList.toggle('pixel', opts.type);
+});
+glC.addEventListener('pointermove', (e) => {
+  const r = glC.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / scale), y = Math.floor((e.clientY - r.top) / scale);
+  const id = (x >= 0 && y >= 0 && x < BW && y < BH) ? cpu.ids[y * BW + x] : 0, it = id ? scenes[theme].items[id - 1] : null;
+  paused = true; hover = (it && it.repo) ? id : 0;
+});
+glC.addEventListener('pointerleave', () => { paused = false; hover = 0; });
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pinned = scenes.maquette.items.findIndex(it => it.repo && it.repo.name === 'locator') + 1;
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(64, now - last); last = now;
+  if (!paused && !reduce) {
+    if (!opts.step) theta += dt * (Math.PI * 2 / 48000);
+    else {
+      stepT += dt;
+      const period = 3400, dur = 900, k = Math.floor(stepT / period), u = Math.min(1, (stepT - k * period) / dur);
+      theta = base + (k + (u >= 1 ? 1 : 1 - Math.pow(2, -10 * u))) * Math.PI / 4;
+    }
+  }
+  const sc = scenes[theme];
+  renderScene(sc, theta, now, cpu);
+  if (glv) {
+    glv.draw(theme, theta, { dither: opts.dither, outline: opts.outline, hover: hover ? hover + 1 : 0, k: kpx, ink: INK[theme], hoverInk: HOVER_INK[theme] });
+    const it = sc.items[(hover || pinned) - 1], r = it.repo;
+    const age = r.days === 0 ? 'pushed today' : r.days < 60 ? 'pushed ' + r.days + 'd ago' : 'pushed ' + Math.round(r.days / 30) + 'mo ago';
+    const html = r.name + ' <span>· ' + r.lang + ' · ' + age + '</span>';
+    if (tip.innerHTML !== html) tip.innerHTML = html;
+    tip.style.left = (glC.offsetLeft + it.sx * scale) + 'px';
+    tip.style.top = (glC.offsetTop + (it.sy - it.top) * scale - 12) + 'px';
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+.project-lot { position: relative; flex: none; overflow: hidden; margin: 0 0 -12px -10px; pointer-events: none; }
+.project-lot__canvas { position: absolute; left: 0; bottom: 0; display: block; }
+.project-lot__canvas--pixel { image-rendering: pixelated; }
+.project-lot__cap { flex: none; margin-bottom: 2px; white-space: nowrap; pointer-events: none;
+  font-family: 'Silkscreen', 'Courier New', monospace; font-size: 0.72rem; line-height: 1.45; color: #1a2419; }
+.project-lot__cap span { display: block; color: #4d6650; }
+:root[data-theme="dark"] .project-lot__cap { color: #f0efeb; }
+:root[data-theme="dark"] .project-lot__cap span { color: #a3b18a; }
+@media (max-width: 359px) { .project-lot__cap { display: none; } }

@@ -54,6 +54,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/portfolio
 
 // Routes
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/city', require('./routes/city'));
 
 // Serve static files from React build
 if (process.env.NODE_ENV === 'production') {

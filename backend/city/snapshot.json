@@ -1,0 +1,305 @@
+{
+  "generatedAt": "2026-11-21T05:03:54.766Z",
+  "repos": [
+    {
+      "name": "murmur",
+      "language": "Swift",
+      "sizeKB": 16498,
+      "pushedAt": "2026-11-21T00:18:20Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/murmur",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "pdfcraft",
+      "language": "Rust",
+      "sizeKB": 117411,
+      "pushedAt": "2026-11-20T13:08:47Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/pdfcraft",
+      "homepage": "https://getartcraft.com/apps/printcraft",
+      "fork": true
+    },
+    {
+      "name": "juice",
+      "language": "Swift",
+      "sizeKB": 23,
+      "pushedAt": "2026-11-20T08:21:13Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/juice",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "Portfolio",
+      "language": "TypeScript",
+      "sizeKB": 2279,
+      "pushedAt": "2026-11-19T11:59:37Z",
+      "stars": 1,
+      "url": "https://github.com/NotTanJune/Portfolio",
+      "homepage": "https://tanmaynargas.com",
+      "fork": false
+    },
+    {
+      "name": "crack-detection",
+      "language": "Jupyter Notebook",
+      "sizeKB": 778,
+      "pushedAt": "2026-11-16T04:33:48Z",
+      "stars": 1,
+      "url": "https://github.com/NotTanJune/crack-detection",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "ProfileQuest",
+      "language": "JavaScript",
+      "sizeKB": 425,
+      "pushedAt": "2026-11-16T04:33:45Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/ProfileQuest",
+      "homepage": "https://profile-quest-puce.vercel.app/",
+      "fork": false
+    },
+    {
+      "name": "locator",
+      "language": "Rust",
+      "sizeKB": 79675,
+      "pushedAt": "2026-11-16T04:33:43Z",
+      "stars": 18,
+      "url": "https://github.com/NotTanJune/locator",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "branch-to-the-future",
+      "language": "Rust",
+      "sizeKB": 4578,
+      "pushedAt": "2026-11-16T02:04:34Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/branch-to-the-future",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "strafe",
+      "language": "Swift",
+      "sizeKB": 1771,
+      "pushedAt": "2026-11-15T10:46:54Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/strafe",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "fixpath",
+      "language": "Python",
+      "sizeKB": 5071,
+      "pushedAt": "2026-11-02T07:16:22Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/fixpath",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "pdocf",
+      "language": "Swift",
+      "sizeKB": 112,
+      "pushedAt": "2026-11-01T07:57:43Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/pdocf",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "AutoRaise",
+      "language": "Objective-C++",
+      "sizeKB": 6046,
+      "pushedAt": "2026-10-31T12:27:53Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/AutoRaise",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "AI6101",
+      "language": "Rust",
+      "sizeKB": 41691,
+      "pushedAt": "2026-10-27T06:22:54Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/AI6101",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "ios-simulator-skill",
+      "language": "Python",
+      "sizeKB": 462,
+      "pushedAt": "2026-08-30T02:30:03Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/ios-simulator-skill",
+      "homepage": "https://www.conor.fyi",
+      "fork": true
+    },
+    {
+      "name": "superpowers",
+      "language": "Shell",
+      "sizeKB": 4654,
+      "pushedAt": "2026-08-30T02:29:58Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/superpowers",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "spiderfoot",
+      "language": "Python",
+      "sizeKB": 16697,
+      "pushedAt": "2026-08-30T02:29:54Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/spiderfoot",
+      "homepage": "http://www.spiderfoot.net",
+      "fork": true
+    },
+    {
+      "name": "espanso",
+      "language": "Rust",
+      "sizeKB": 104492,
+      "pushedAt": "2026-08-30T02:29:44Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/espanso",
+      "homepage": "https://espanso.org",
+      "fork": true
+    },
+    {
+      "name": "YTLite",
+      "language": "Logos",
+      "sizeKB": 9723,
+      "pushedAt": "2026-06-24T03:44:29Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/YTLite",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "AI6131-3D-Deep-Learning",
+      "language": "Python",
+      "sizeKB": 2037,
+      "pushedAt": "2026-05-25T23:18:23Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/AI6131-3D-Deep-Learning",
+      "homepage": "https://latentsdf-explorer.vercel.app",
+      "fork": false
+    },
+    {
+      "name": "anglerfish",
+      "language": "TypeScript",
+      "sizeKB": 4266,
+      "pushedAt": "2026-03-30T09:21:13Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/anglerfish",
+      "homepage": "https://tiny-fish-two.vercel.app",
+      "fork": false
+    },
+    {
+      "name": "DevDex",
+      "language": "Python",
+      "sizeKB": 234,
+      "pushedAt": "2026-03-02T11:39:11Z",
+      "stars": 2,
+      "url": "https://github.com/NotTanJune/DevDex",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "Nightingale",
+      "language": "TypeScript",
+      "sizeKB": 299,
+      "pushedAt": "2026-02-09T07:58:03Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/Nightingale",
+      "homepage": "https://frontend-lake-five-85.vercel.app",
+      "fork": false
+    },
+    {
+      "name": "cycleit",
+      "language": "TypeScript",
+      "sizeKB": 1314,
+      "pushedAt": "2026-01-25T17:20:44Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/cycleit",
+      "homepage": "https://rewear-sg-prototype.vercel.app",
+      "fork": false
+    },
+    {
+      "name": "AI6103-Deep-Learning-and-Applications",
+      "language": "Jupyter Notebook",
+      "sizeKB": 941,
+      "pushedAt": "2025-11-24T08:30:57Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/AI6103-Deep-Learning-and-Applications",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "AI6102-ML",
+      "language": "Jupyter Notebook",
+      "sizeKB": 33222,
+      "pushedAt": "2025-11-21T09:32:17Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/AI6102-ML",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "GenAI-for-Visual-Synthesis",
+      "language": "Jupyter Notebook",
+      "sizeKB": 5753,
+      "pushedAt": "2025-11-19T09:54:31Z",
+      "stars": 0,
+      "url": "https://github.com/NotTanJune/GenAI-for-Visual-Synthesis",
+      "homepage": null,
+      "fork": true
+    },
+    {
+      "name": "Harbour",
+      "language": "HTML",
+      "sizeKB": 13,
+      "pushedAt": "2025-10-12T08:14:30Z",
+      "stars": 1,
+      "url": "https://github.com/NotTanJune/Harbour",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "RemoteControlRobot",
+      "language": "Python",
+      "sizeKB": 2,
+      "pushedAt": "2025-09-15T17:15:14Z",
+      "stars": 1,
+      "url": "https://github.com/NotTanJune/RemoteControlRobot",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "BookMyTicket",
+      "language": "C++",
+      "sizeKB": 38,
+      "pushedAt": "2025-09-14T19:02:21Z",
+      "stars": 1,
+      "url": "https://github.com/NotTanJune/BookMyTicket",
+      "homepage": null,
+      "fork": false
+    },
+    {
+      "name": "GrAD",
+      "language": "Python",
+      "sizeKB": 6701,
+      "pushedAt": "2025-08-18T15:29:22Z",
+      "stars": 2,
+      "url": "https://github.com/NotTanJune/GrAD",
+      "homepage": "https://grad-app.fly.dev/",
+      "fork": false
+    }
+  ]
+}

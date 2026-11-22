@@ -1,0 +1,9 @@
+{
+  "user": "NotTanJune",
+  "include": [
+    "murmur", "pdfcraft", "strafe", "AutoRaise", "ios-simulator-skill",
+    "superpowers", "spiderfoot", "espanso", "GenAI-for-Visual-Synthesis", "YTLite"
+  ],
+  "exclude": [],
+  "maxRepos": 40
+}

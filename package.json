@@ -22,6 +22,8 @@
     "deploy": "bash scripts/deploy.sh",
     "purge-cdn": "curl -fsS -X POST \"https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache\" -H \"Authorization: Bearer $CLOUDFLARE_API_TOKEN\" -H \"Content-Type: application/json\" --data '{\"purge_everything\":true}'",
     "test:images": "bun test scripts/optimize-images.test.ts",
+    "city:snapshot": "bun scripts/city-snapshot.ts",
+    "city:emblems": "bun scripts/city-emblems.ts",
     "heroku-postbuild": "bun run --parallel install:backend install:frontend && bun run build:frontend"
   },
   "devDependencies": {

@@ -4,10 +4,21 @@ import { hoverStyleHandlers } from '../../utils/styleHelpers';
 import { GitHubIcon, ExternalLinkIcon, XIcon } from '../Icons';
 import { colors, CARD_RADIUS, AnimatedSection } from '../../App';
 import AnimatedContent from '../AnimatedContent';
+import ProjectLot from '../../city/ProjectLot';
+import { useCityData } from '../../city/useCityData';
+import { PARK_COUNT } from '../../city/parks';
+
+// Matches on the repo name whatever the owner, so the owner's fork
+// `GenAI-for-Visual-Synthesis` finds the card that links to its upstream.
+const repoKey = (project: { GitHub?: string }) => {
+  const m = project.GitHub && project.GitHub.match(/github\.com\/[^/]+\/([^/#?]+)/i);
+  return m ? m[1].toLowerCase() : null;
+};
 
 const Projects: React.FC = () => {
   const [filter, setFilter] = useState('All');
   const isMobile = useIsMobile();
+  const city = useCityData();
   const filters = ['All', 'Web App', 'iOS App', 'ML Model', 'C++ Project', 'Robotics Project', 'Rust Project', 'CLI Tool', 'Deep Learning Model'];
 
   useEffect(() => {
@@ -168,6 +179,19 @@ const Projects: React.FC = () => {
 
   ];
 
+  // What every project shows on its card: its repo's building, or a park. Worked out over the full list,
+  // not the filtered one, so a card keeps its park when the filter changes.
+  const inCity: Record<string, boolean> = {};
+  city.repos.forEach(r => { inCity[r.name.toLowerCase()] = true; });
+  let nextPark = 0;
+  const lots: Record<string, { repoName: string | null; park: number }> = {};
+  projects.forEach(p => {
+    const key = repoKey(p);
+    lots[p.title] = key && inCity[key]
+      ? { repoName: key, park: 0 }
+      : { repoName: null, park: nextPark++ % PARK_COUNT };
+  });
+
   const filteredProjects = filter === 'All'
     ? projects
     : projects.filter(project => {
@@ -275,7 +299,7 @@ const Projects: React.FC = () => {
             marginBottom: isMobile ? '60px' : '80px'
           }}>
           {filteredProjects.map((project, index) => (
-            <div key={index} style={{
+            <div key={index} data-project-card="" style={{
               backgroundColor: colors.mainBg,
               border: `2px solid ${colors.borderColor}`,
               borderRadius: CARD_RADIUS,
@@ -418,9 +442,16 @@ const Projects: React.FC = () => {
               {/* Footer */}
               <div style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 gap: '8px'
               }}>
+
+                <ProjectLot
+                  repos={city.repos}
+                  repoName={lots[project.title].repoName}
+                  park={lots[project.title].park}
+                  seed={project.title}
+                />
 
                 <div style={{ flex: 1 }}></div>
 

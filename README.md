@@ -80,6 +80,23 @@ HTTP/3 terminates at Cloudflare, which connects to the Heroku origin over HTTPS.
 
 `bun run optimize-images` converts images under `frontend/public/images` to WebP in place and removes each original only after its WebP output is verified. The Heroku build runs it before the React build, and a Husky pre-commit hook runs it on staged images. JPEG, PNG, WebP, BMP, and GIF work on Linux; HEIC, AVIF, and TIFF do not.
 
+## Repo city
+
+Home shows a small pixel city where each building is one of my GitHub repos.
+Height is repo size, lit windows mean a recent push, and colour is the main
+language. On the Projects page each card shows its own repo's building; a
+project without a public repo of mine shows a small park.
+
+- Which repos appear is set in `backend/city/config.json` (`include` for
+  forks I have worked on, `exclude` to hide a repo). Private repos never get
+  a building.
+- The backend serves the list at `/api/city` and refreshes it from GitHub
+  hourly. `bun run city:snapshot` refreshes the committed fallback; run it
+  before a deploy.
+- Rooftop emblems live in `scripts/city/emblems-src/`; `bun run city:emblems`
+  rebuilds `frontend/src/city/emblems.json`. Emblems were generated with
+  Tessera-small (CC BY-NC 4.0). The label font is Silkscreen (SIL OFL).
+
 ## License
 
 MIT

@@ -19,7 +19,7 @@ const Projects: React.FC = () => {
   const [filter, setFilter] = useState('All');
   const isMobile = useIsMobile();
   const city = useCityData();
-  const filters = ['All', 'Web App', 'iOS App', 'ML Model', 'C++ Project', 'Robotics Project', 'Rust Project', 'CLI Tool', 'Deep Learning Model'];
+  const filters = ['All', 'Web App', 'iOS App', 'macOS App', 'ML Model', 'C++ Project', 'Robotics Project', 'Rust Project', 'CLI Tool', 'Deep Learning Model', 'LLM'];
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -33,7 +33,16 @@ const Projects: React.FC = () => {
       category: 'iOS App',
       featured: true,
       LiveDemo: 'https://kelpie.site',
+      LiveDemoLabel: 'Kelpie live site',
       Twitter: 'https://x.com/nottanjune/status/2111028384327458821'
+    },
+    {
+      title: 'Murmur',
+      description: 'Push-to-talk dictation for Mac and iPhone. Hold a key on the Mac or tap the Murmur keyboard on the iPhone, and the cleaned-up text is typed into the app you are in. Speech recognition and cleanup run on device.',
+      tech: ['Swift', 'SwiftUI', 'Core ML', 'FluidAudio', 'MLX', 'WebKit'],
+      category: ['macOS App', 'iOS App'],
+      featured: true,
+      GitHub: 'https://github.com/NotTanJune/murmur',
     },
     {
       title: 'Locator (lctr)',
@@ -91,7 +100,8 @@ const Projects: React.FC = () => {
       tech: ['Swift', 'SwiftUI', 'Supabase', 'Groq', 'ARM'],
       category: 'iOS App',
       featured: true,
-      LiveDemo: 'https://everyround.live'
+      LiveDemo: 'https://everyround.live',
+      LiveDemoLabel: 'Every Round live site'
     },
     {
       title: 'Profile Quest',
@@ -141,7 +151,8 @@ const Projects: React.FC = () => {
       category: 'ML Model',
       featured: false,
       GitHub: 'https://github.com/NotTanJune/crack-detection',
-      LiveDemo: 'https://huggingface.co/spaces/nottanjune/crack-detection-gradio'
+      LiveDemo: 'https://huggingface.co/spaces/nottanjune/crack-detection-gradio',
+      LiveDemoLabel: 'Binary Classification ML Model demo on Hugging Face'
     },
     {
       title: 'Book My Ticket',
@@ -252,6 +263,8 @@ const Projects: React.FC = () => {
           {filters.map((filterItem) => (
             <button
               key={filterItem}
+              type="button"
+              aria-pressed={filter === filterItem}
               onClick={() => setFilter(filterItem)}
               style={{
                 display: 'inline-flex',
@@ -310,7 +323,6 @@ const Projects: React.FC = () => {
               flexDirection: 'column',
               overflow: 'hidden',
               transition: 'all 0.3s ease',
-              cursor: 'pointer',
               position: 'relative'
             }}
             onMouseEnter={(e) => {
@@ -333,6 +345,8 @@ const Projects: React.FC = () => {
                     switch(project.title) {
                       case 'Kelpie':
                         return '/images/projects/Kelpie.webp';
+                      case 'Murmur':
+                        return '/images/projects/Murmur.webp';
                       case 'Locator (lctr)':
                         return '/images/projects/lctr.webp';
                       case 'Branch To the Future (bttf)':
@@ -404,7 +418,7 @@ const Projects: React.FC = () => {
                 <p style={{
                   fontSize: '0.875rem',
                   fontWeight: '400',
-                  color: colors.accentText,
+                  color: colors.secondaryText,
                   lineHeight: '1.4'
                 }}>
                   {project.description}
@@ -460,6 +474,7 @@ const Projects: React.FC = () => {
                     href={project.GitHub}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`${project.title} source code on GitHub`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -483,7 +498,9 @@ const Projects: React.FC = () => {
                       { backgroundColor: 'transparent' }
                     )}
                   >
-                    <GitHubIcon size={16} />
+                    <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                      <GitHubIcon size={16} />
+                    </span>
                   </a>
                 )}
 
@@ -492,6 +509,7 @@ const Projects: React.FC = () => {
                     href={project.LiveDemo}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={project.LiveDemoLabel ?? `${project.title} live demo`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -515,7 +533,9 @@ const Projects: React.FC = () => {
                       { backgroundColor: 'transparent' }
                     )}
                   >
-                    <ExternalLinkIcon size={16} />
+                    <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                      <ExternalLinkIcon size={16} />
+                    </span>
                   </a>
                 )}
 
@@ -548,7 +568,9 @@ const Projects: React.FC = () => {
                       { backgroundColor: 'transparent' }
                     )}
                   >
-                    <XIcon size={14} />
+                    <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                      <XIcon size={14} />
+                    </span>
                   </a>
                 )}
               </div>

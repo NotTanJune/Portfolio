@@ -7,6 +7,8 @@ import { SOCIAL_LINKS, EMAIL_LINK } from '../../socialLinks';
 import { colors, AnimatedSection, ThemeContext } from '../../App';
 import Turnstile, { TurnstileHandle, TURNSTILE_SITE_KEY } from '../Turnstile';
 
+const LIMITS = { name: 100, subject: 200, message: 2000 } as const;
+
 const Contact: React.FC = () => {
   const isMobile = useIsMobile();
   const { theme } = useContext(ThemeContext);
@@ -66,7 +68,6 @@ const Contact: React.FC = () => {
 
     setIsSubmitting(true);
     setSubmitStatus('idle');
-    setLastSubmissionTime(currentTime);
 
     try {
       const API_URL = process.env.NODE_ENV === 'production'
@@ -84,6 +85,8 @@ const Contact: React.FC = () => {
 
       const response = await axios.post(API_URL, submitData);
 
+      // Cooldown only after the server accepted the message, so a failed attempt can be retried.
+      setLastSubmissionTime(Date.now());
       setSubmitStatus('success');
       setSubmitMessage(response.data.message || 'Message sent successfully! I\'ll get back to you soon.');
 
@@ -129,9 +132,10 @@ const Contact: React.FC = () => {
       }}
     >
       <div style={{
-        maxWidth: '760px',
+        // 840px grid plus a 24px gutter each side.
+        maxWidth: '888px',
         margin: '0 auto',
-        padding: isMobile ? '0 16px' : '0 clamp(240px, 15vw, 720px)',
+        padding: isMobile ? '0 16px' : '0 24px',
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden'
@@ -234,6 +238,7 @@ const Contact: React.FC = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  maxLength={LIMITS.name}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -265,6 +270,7 @@ const Contact: React.FC = () => {
                   value={formData.subject}
                   onChange={handleChange}
                   required
+                  maxLength={LIMITS.subject}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -296,6 +302,8 @@ const Contact: React.FC = () => {
                   value={formData.message}
                   onChange={handleChange}
                   required
+                  maxLength={LIMITS.message}
+                  aria-describedby="contact-message-count"
                   rows={3}
                   style={{
                     width: '100%',
@@ -312,6 +320,17 @@ const Contact: React.FC = () => {
                   placeholder="I'd like to discuss a project opportunity..."
                   {...inputFocusHandlers(colors.accentText, colors.accentHover, colors.borderColor)}
                 />
+                <div
+                  id="contact-message-count"
+                  style={{
+                    marginTop: '6px',
+                    textAlign: 'right',
+                    fontSize: '0.8rem',
+                    color: colors.secondaryText
+                  }}
+                >
+                  {`${formData.message.length} / ${LIMITS.message}`}
+                </div>
               </div>
 
               {/* Honeypot field - hidden from users but visible to bots */}
@@ -557,9 +576,13 @@ const Contact: React.FC = () => {
             .contact-container textarea,
             .contact-container button,
             .contact-container select,
-            .contact-container div,
             .contact-container a {
               max-width: 100% !important;
+              box-sizing: border-box !important;
+            }
+            /* min-width: 0 stops grid and flex children overflowing without overriding their own max-widths. */
+            .contact-container div {
+              min-width: 0;
               box-sizing: border-box !important;
             }
           `}

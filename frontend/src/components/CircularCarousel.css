@@ -200,6 +200,41 @@
   height: 1em;
 }
 
+.circular-carousel__toggle {
+  position: absolute;
+  /* Bottom centre, under the photo ring. The root is taller than the ring, so the host page sets
+     --cc-toggle-bottom to land the button in the gap between the ring and whatever follows. */
+  bottom: var(--cc-toggle-bottom, 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(128, 128, 140, 0.45);
+  border-radius: 50%;
+  background: rgba(128, 128, 140, 0.18);
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.circular-carousel__toggle:hover,
+.circular-carousel__toggle:focus-visible {
+  opacity: 1;
+  background: rgba(128, 128, 140, 0.32);
+}
+
+.circular-carousel__toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .circular-carousel__live {
   position: absolute;
   width: 1px;

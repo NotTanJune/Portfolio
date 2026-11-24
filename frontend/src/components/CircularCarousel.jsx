@@ -308,6 +308,14 @@ const CircularCarousel = ({
   const [dragging, setDragging] = useState(false);
   const readyRef = useRef(false);
   readyRef.current = ready;
+  // Pause holds that also drive the live region (APG carousel pattern): announce slides only while not auto-rotating.
+  const [userPaused, setUserPaused] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const [manual, setManual] = useState(false);
+  const manualTimerRef = useRef(0);
+  const inputModeRef = useRef('keyboard');
 
   const stateRef = useRef({
     angle: 0,
@@ -317,6 +325,9 @@ const CircularCarousel = ({
     press: null,
     drag: false,
     hover: false,
+    userPaused: false,
+    focus: false,
+    touch: false,
     pointer: { inside: false, x: 0, y: 0 },
     yaw: 0,
     pitch: 0,
@@ -530,7 +541,13 @@ const CircularCarousel = ({
         }
       }
 
-      const paused = (s.pauseOnHover && state.hover) || state.drag || now < state.holdUntil;
+      const paused =
+        (s.pauseOnHover && state.hover) ||
+        state.drag ||
+        state.userPaused ||
+        state.focus ||
+        state.touch ||
+        now < state.holdUntil;
       const cruise = s.autoplay === 'drift' && !paused && !state.intro ? s.speed * state.dir : 0;
       let busy = Boolean(state.intro) || state.drag;
 
@@ -728,24 +745,79 @@ const CircularCarousel = ({
     wakeRef.current();
   });
 
-  const focusIndex = useCallback(index => {
-    const state = stateRef.current;
-    const s = settingsRef.current;
-    let target = -index * s.step;
-    target += 360 * Math.round((state.angle - target) / 360);
-    state.target = target;
-    state.holdUntil = performance.now() + 2800;
-    wakeRef.current();
+  const markManual = useCallback(() => {
+    setManual(true);
+    clearTimeout(manualTimerRef.current);
+    manualTimerRef.current = setTimeout(() => setManual(false), 3200);
   }, []);
 
-  const stepBy = useCallback(delta => {
-    const state = stateRef.current;
-    const s = settingsRef.current;
-    const base = state.target ?? Math.round(state.angle / s.step) * s.step;
-    state.target = base - delta * s.step * (s.layout.inward ? -1 : 1);
-    state.holdUntil = performance.now() + 2800;
+  useEffect(() => () => clearTimeout(manualTimerRef.current), []);
+
+  const focusIndex = useCallback(
+    index => {
+      markManual();
+      const state = stateRef.current;
+      const s = settingsRef.current;
+      let target = -index * s.step;
+      target += 360 * Math.round((state.angle - target) / 360);
+      state.target = target;
+      state.holdUntil = performance.now() + 2800;
+      wakeRef.current();
+    },
+    [markManual]
+  );
+
+  const stepBy = useCallback(
+    delta => {
+      markManual();
+      const state = stateRef.current;
+      const s = settingsRef.current;
+      const base = state.target ?? Math.round(state.angle / s.step) * s.step;
+      state.target = base - delta * s.step * (s.layout.inward ? -1 : 1);
+      state.holdUntil = performance.now() + 2800;
+      wakeRef.current();
+    },
+    [markManual]
+  );
+
+  const toggleUserPause = () => {
+    const next = !stateRef.current.userPaused;
+    stateRef.current.userPaused = next;
+    setUserPaused(next);
     wakeRef.current();
+  };
+
+  // Keyboard vs pointer: only keyboard focus pauses autoplay, a mouse click that focuses the region must not.
+  useEffect(() => {
+    const keyboard = () => {
+      inputModeRef.current = 'keyboard';
+    };
+    const pointer = () => {
+      inputModeRef.current = 'pointer';
+    };
+    document.addEventListener('keydown', keyboard, true);
+    document.addEventListener('pointerdown', pointer, true);
+    return () => {
+      document.removeEventListener('keydown', keyboard, true);
+      document.removeEventListener('pointerdown', pointer, true);
+    };
   }, []);
+
+  const handleFocus = () => {
+    if (inputModeRef.current === 'pointer') return;
+    stateRef.current.focus = true;
+    setFocusWithin(true);
+    wakeRef.current();
+  };
+
+  const handleBlur = event => {
+    if (rootRef.current?.contains(event.relatedTarget)) return;
+    stateRef.current.focus = false;
+    setFocusWithin(false);
+    wakeRef.current();
+  };
+
+  const onToggle = target => Boolean(target.closest?.('[data-cc-toggle]'));
 
   const updatePointer = event => {
     const rect = rootRef.current.getBoundingClientRect();
@@ -757,6 +829,11 @@ const CircularCarousel = ({
   const handlePointerDown = event => {
     const state = stateRef.current;
     state.suppressClick = false;
+    if (onToggle(event.target)) return;
+    if (event.pointerType !== 'mouse') {
+      state.touch = true;
+      setTouching(true);
+    }
     if (!draggable || event.button !== 0) return;
     state.press = {
       id: event.pointerId,
@@ -809,6 +886,11 @@ const CircularCarousel = ({
 
   const releasePointer = event => {
     const state = stateRef.current;
+    if (state.touch && event.pointerType !== 'mouse') {
+      state.touch = false;
+      setTouching(false);
+      wakeRef.current();
+    }
     const press = state.press;
     if (!press || press.id !== event.pointerId) return;
     state.press = null;
@@ -834,6 +916,7 @@ const CircularCarousel = ({
   const handlePointerEnter = event => {
     if (event.pointerType !== 'mouse') return;
     stateRef.current.hover = true;
+    setHovering(true);
     wakeRef.current();
   };
 
@@ -841,6 +924,7 @@ const CircularCarousel = ({
     const state = stateRef.current;
     if (event.pointerType === 'mouse') {
       state.hover = false;
+      setHovering(false);
       state.pointer.inside = false;
     }
     wakeRef.current();
@@ -860,6 +944,7 @@ const CircularCarousel = ({
   };
 
   const handleKeyDown = event => {
+    if (onToggle(event.target)) return;
     const forward = axis === 'x' ? 'ArrowDown' : 'ArrowRight';
     const backward = axis === 'x' ? 'ArrowUp' : 'ArrowLeft';
     if (event.key === forward) stepBy(1);
@@ -871,6 +956,14 @@ const CircularCarousel = ({
     event.preventDefault();
   };
 
+  const autoRunning =
+    settings.autoplay !== 'off' &&
+    !userPaused &&
+    !focusWithin &&
+    !touching &&
+    !manual &&
+    !dragging &&
+    !(pauseOnHover && hovering);
   const current = list[active] || list[0];
   const label = current ? current.title || current.alt || `Image ${active + 1}` : '';
 
@@ -959,6 +1052,8 @@ const CircularCarousel = ({
       onPointerLeave={handlePointerLeave}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
     >
       <div className="circular-carousel__view">
         <div ref={stageRef} className="circular-carousel__stage">
@@ -997,7 +1092,24 @@ const CircularCarousel = ({
           </span>
         </div>
       )}
-      <div className="circular-carousel__live" aria-live="polite" aria-atomic="true">
+      {settings.autoplay !== 'off' && (
+        <button
+          type="button"
+          className="circular-carousel__toggle"
+          data-cc-toggle=""
+          aria-label={userPaused ? 'Play carousel' : 'Pause carousel'}
+          onClick={toggleUserPause}
+        >
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false" fill="currentColor">
+            {userPaused ? (
+              <path d="M4 2.5v11l9-5.5z" />
+            ) : (
+              <path d="M3.5 2h3v12h-3zM9.5 2h3v12h-3z" />
+            )}
+          </svg>
+        </button>
+      )}
+      <div className="circular-carousel__live" aria-live={autoRunning ? 'off' : 'polite'} aria-atomic="true">
         {`${label}, ${active + 1} of ${count}`}
       </div>
     </div>

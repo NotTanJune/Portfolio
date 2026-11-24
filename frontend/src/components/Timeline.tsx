@@ -96,7 +96,7 @@ const Timeline: React.FC<TimelineProps> = ({ colors, isMobile }) => {
 
             <div style={{
               fontSize: isMobile ? '1rem' : '1.1rem',
-              color: colors.accentText,
+              color: colors.secondaryText,
               fontWeight: 500,
               marginBottom: '12px',
             }}>

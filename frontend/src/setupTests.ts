@@ -14,10 +14,6 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-jest.mock('./utils/useLenis', () => ({
-  useLenis: () => null,
-}));
-
 jest.mock('./utils/useAnimationRefresh', () => ({
   useAnimationRefresh: () => undefined,
 }));

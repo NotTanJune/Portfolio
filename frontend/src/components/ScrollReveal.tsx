@@ -21,6 +21,8 @@ interface ScrollRevealProps {
   wordAnimationEnd?: string;
   style?: React.CSSProperties;
   textStyle?: React.CSSProperties;
+  /** Element to render. Defaults to `h2`; use `p` when the text is body copy, not a heading. */
+  as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'div';
 }
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
@@ -36,9 +38,10 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
   rotationEnd = 'top center',
   wordAnimationEnd = 'top center',
   style,
-  textStyle
+  textStyle,
+  as: Tag = 'h2'
 }) => {
-  const containerRef = useRef<HTMLHeadingElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
 
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
@@ -146,11 +149,15 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
   ]);
 
   return (
-    <h2 ref={containerRef} className={`scroll-reveal ${containerClassName}`} style={style}>
+    <Tag
+      ref={containerRef as React.Ref<any>}
+      className={`scroll-reveal ${containerClassName}`}
+      style={style}
+    >
       <span className={`scroll-reveal-text ${textClassName}`} style={textStyle}>
         {splitText}
       </span>
-    </h2>
+    </Tag>
   );
 };
 

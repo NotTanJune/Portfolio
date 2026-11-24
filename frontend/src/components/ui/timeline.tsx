@@ -104,7 +104,7 @@ export const Timeline: React.FC<TimelineProps> = ({ data, colors, isMobile }) =>
                     textAlign: "right",
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    color: colors.accentText,
+                    color: colors.secondaryText,
                   }}
                 >
                   {item.title}
@@ -145,7 +145,7 @@ export const Timeline: React.FC<TimelineProps> = ({ data, colors, isMobile }) =>
                     paddingLeft: dotX + DOT_SIZE + 12,
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    color: colors.borderColor,
+                    color: colors.secondaryText,
                   }}
                 >
                   {item.title}

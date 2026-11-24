@@ -244,7 +244,8 @@ const RouteAnnouncer: React.FC = () => {
 };
 
 // Navbar Component
-const Navbar: React.FC = () => {
+const MOBILE_MENU_ID = 'mobile-nav-menu';
+export const Navbar: React.FC = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { theme, toggleTheme } = useContext(ThemeContext);
@@ -295,42 +296,62 @@ const Navbar: React.FC = () => {
     }
   }, [menuOpen]);
 
-  // Focus trap for mobile menu
-  useEffect(() => {
-    if (!menuOpen) return;
-    const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
-    if (!dialog) return;
+  // Close from inside the menu (close button, backdrop, Escape) returns focus to the hamburger;
+  // a route change closes it without moving focus.
+  const restoreFocusRef = useRef(false);
+  const closeMenu = useCallback(() => {
+    restoreFocusRef.current = true;
+    setMenuOpen(false);
+  }, []);
 
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'a[href], button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length > 0) focusable[0].focus();
+  // The menu only exists while the hamburger is shown.
+  useEffect(() => {
+    if (!needsHamburger) setMenuOpen(false);
+  }, [needsHamburger]);
+
+  // While open: the page behind is inert, focus starts on the first item and is trapped, Escape closes.
+  const menuActive = menuOpen && needsHamburger;
+  useEffect(() => {
+    if (!menuActive) {
+      if (restoreFocusRef.current) {
+        restoreFocusRef.current = false;
+        hamburgerRef.current?.focus();
+      }
+      return;
+    }
+    const root = document.getElementById('root');
+    root?.setAttribute('inert', '');
+    const menu = document.getElementById(MOBILE_MENU_ID);
+    const focusables = () =>
+      Array.from(menu?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []);
+    focusables()[0]?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setMenuOpen(false);
-        hamburgerRef.current?.focus();
+        e.preventDefault();
+        closeMenu();
         return;
       }
       if (e.key !== 'Tab') return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [menuOpen]);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      root?.removeAttribute('inert');
+    };
+  }, [menuActive, closeMenu]);
 
   return (
     <nav style={{ 
@@ -400,6 +421,7 @@ const Navbar: React.FC = () => {
             <AnimatedSection key={item.to} direction="down" delay={200 + index * 100}>
               <Link 
                 to={item.to} 
+                aria-current={location.pathname === item.to ? 'page' : undefined}
                 style={{ 
                   color: location.pathname === item.to ? colors.primaryText : colors.primaryText,
                   backgroundColor: location.pathname === item.to ? colors.techBg : 'transparent',
@@ -489,8 +511,9 @@ const Navbar: React.FC = () => {
               <button
                 ref={hamburgerRef}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-                aria-haspopup="true"
+                aria-haspopup="dialog"
                 aria-expanded={menuOpen}
+                aria-controls={menuOpen ? MOBILE_MENU_ID : undefined}
                 onClick={() => setMenuOpen(o => !o)}
                 style={{
                   display: 'inline-flex',
@@ -518,7 +541,10 @@ const Navbar: React.FC = () => {
         </AnimatedSection>
       </div>
 
-      {/* Animated mobile/overflow compact menu (portaled to body so the whole page blurs) */}
+      {/* Mobile/overflow compact menu, portaled to body so the whole page blurs. It stays mounted so the
+          open/close animation needs no AnimatePresence, and while closed it is inert and aria-hidden,
+          so neither keyboard nor screen reader can reach it. Focus handling is in the
+          effect above (no dialog library, to keep main.js small for first visits). */}
       {needsHamburger && typeof document !== 'undefined' && createPortal(
         <>
           {/* Backdrop - outside the nav to blur the entire page */}
@@ -526,6 +552,7 @@ const Navbar: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: menuOpen ? 1 : 0 }}
             transition={{ duration: 0.2 }}
+            aria-hidden="true"
             style={{
               position: 'fixed',
               inset: 0,
@@ -535,14 +562,17 @@ const Navbar: React.FC = () => {
               pointerEvents: menuOpen ? 'auto' : 'none',
               zIndex: 9998,
             }}
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           />
 
           {/* Floating popup menu */}
           <motion.div
+            id={MOBILE_MENU_ID}
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: menuOpen ? 1 : 0, scale: menuOpen ? 1 : 0.96, y: menuOpen ? 0 : -8 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            inert={!menuOpen}
+            aria-hidden={menuOpen ? undefined : true}
             style={{
               position: 'fixed',
               top: isMobile ? '72px' : '80px',
@@ -568,7 +598,7 @@ const Navbar: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '12px 14px' }}>
               <button
                 aria-label="Close menu"
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   width: '34px', height: '34px', borderRadius: '10px',
@@ -602,6 +632,7 @@ const Navbar: React.FC = () => {
                 <motion.li key={`menu-${item.to}-${index}`} variants={{ hidden: { opacity: 0, x: 6 }, visible: { opacity: 1, x: 0 } }}>
                   <Link
                     to={item.to}
+                    aria-current={location.pathname === item.to ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     style={{
                       display: 'block', padding: '14px 16px', borderRadius: '16px', textDecoration: 'none',

@@ -5,7 +5,6 @@ import ScrollReveal from '../ScrollReveal';
 import AnimatedContent from '../AnimatedContent';
 import Timeline from '../Timeline';
 import { useIsMobile } from '../../utils/useIsMobile';
-import { useNoWordSplit } from '../../utils/useNoWordSplit';
 import CircularCarousel from '../CircularCarousel';
 import { SOCIAL_LINKS } from '../../socialLinks';
 import { colors, CARD_RADIUS, AnimatedSection, AnimationContext } from '../../App';
@@ -217,7 +216,6 @@ const TechnicalSkills: React.FC = React.memo(() => {
                 fontSize: isMobile ? '0.75rem' : '0.875rem',
                 fontWeight: '500',
                 transition: 'background-color 0.1s ease, border-color 0.3s ease, color 0.3s ease',
-                cursor: 'pointer',
                 flex: isMobile ? '0 1 150px' : '0 1 200px',
                 minWidth: isMobile ? '120px' : '160px',
                 maxWidth: isMobile ? '180px' : '220px',
@@ -271,10 +269,6 @@ const TechnicalSkills: React.FC = React.memo(() => {
 const Home: React.FC = () => {
   const isMobile = useIsMobile();
   const aboutTextRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    // no-op; this ensures aboutTextRef is initialized before hook runs
-  }, []);
-  useNoWordSplit(aboutTextRef, 'p');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -469,7 +463,7 @@ const Home: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    color: colors.accentText,
+                    color: colors.secondaryText,
                     fontSize: '1.3rem',
                     textDecoration: 'none',
                     transition: 'all 0.3s ease',
@@ -486,7 +480,7 @@ const Home: React.FC = () => {
                     e.currentTarget.style.backgroundColor = colors.accentHover;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = colors.accentText;
+                    e.currentTarget.style.color = colors.secondaryText;
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }}
@@ -581,8 +575,10 @@ const Home: React.FC = () => {
               maxWidth: '1100px',
               height: isMobile ? 430 : 620,
               margin: '0 auto',
-              color: colors.primaryText
-            }}>
+              color: colors.primaryText,
+              // Pause button sits in the gap between the photo ring and the About text, which overlaps this box by 36/72px.
+              ['--cc-toggle-bottom' as string]: isMobile ? '100px' : '94px'
+            } as React.CSSProperties}>
               <CircularCarousel
                 items={profileImages}
                 className="circular-carousel--fade-sides"
@@ -610,6 +606,7 @@ const Home: React.FC = () => {
             ].map((paragraph, i) => (
               <ScrollReveal
                 key={i}
+                as="p"
                 baseOpacity={0.15}
                 baseRotation={0}
                 enableBlur={false}
@@ -682,18 +679,21 @@ const Home: React.FC = () => {
                 'iPhone, Apple Watch and widget clients with budgets, subscriptions, statement import and a single SGD + INR ledger'
               ],
               liveDemoUrl: 'https://kelpie.site',
+              liveDemoLabel: 'Kelpie live site',
               twitterUrl: 'https://x.com/nottanjune/status/2111028384327458821'
             },
             {
-              title: 'Every Round',
-              description: 'AI-Powered Mock Interview Coach - Built for ARM',
-              tech: ['Swift', 'SwiftUI', 'Supabase', 'Groq', 'ARM'],
+              title: 'Murmur',
+              description: 'Push-to-talk dictation for Mac and iPhone, with speech recognition and cleanup running on device.',
+              tech: ['Swift', 'SwiftUI', 'Core ML', 'FluidAudio', 'MLX', 'WebKit'],
               features: [
-                'AI powered mock interviews that analyze eye contact, speech patterns, and confidence in real-time with instant feedback',
-                'Privacy-preserving through on-device processing using ARM\'s Neural Engine with sub-30ms response times',
-                'Comprehensive analytics including eye contact tracking, speaking pace analysis, sentiment scoring, and personalized improvement recommendations'
+                'Hold a key on the Mac or tap the Murmur keyboard on the iPhone, and cleaned-up text is typed into the app you are in',
+                'Bark 3.0 Clean speech recognition on the Neural Engine, with rule, S1-mini or Apple Intelligence cleanup and a personal dictionary',
+                'iPhone keyboard records in place through WebKit with no app switching, and its corrected dictations import into the Mac\'s training set'
               ],
-              liveDemoUrl: 'https://everyround.live'
+              liveDemoUrl: 'https://github.com/NotTanJune/murmur#on-the-iphone',
+              liveDemoLabel: 'Murmur iPhone app details on GitHub',
+              githubUrl: 'https://github.com/NotTanJune/murmur'
             },
             {
               title: 'Locator (lctr)',
@@ -705,6 +705,7 @@ const Home: React.FC = () => {
                 'CLI plus interactive TUI workflow, so you can scan, search, filter, and script file lookups directly from the terminal.'
               ],
               liveDemoUrl: 'https://github.com/NotTanJune/locator#-demo',
+              liveDemoLabel: 'Locator demo on GitHub',
               githubUrl: 'https://github.com/NotTanJune/locator',
             }
           ].map((project, index) => (
@@ -718,8 +719,7 @@ const Home: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
-              transition: 'all 0.3s ease',
-              cursor: 'pointer'
+              transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = colors.accentText;
@@ -740,6 +740,8 @@ const Home: React.FC = () => {
                     switch(project.title) {
                       case 'Kelpie':
                         return '/images/projects/Kelpie.webp';
+                      case 'Murmur':
+                        return '/images/projects/Murmur.webp';
                       case 'Locator (lctr)':
                         return '/images/projects/lctr.webp';
                       case 'Branch To the Future (bttf)':
@@ -821,7 +823,7 @@ const Home: React.FC = () => {
                 <p style={{
                   fontSize: '0.875rem',
                   fontWeight: '400',
-                  color: colors.accentText,
+                  color: colors.secondaryText,
                   lineHeight: '1.4'
                 }}>
                   {project.description}
@@ -862,7 +864,7 @@ const Home: React.FC = () => {
                   padding: 0,
                   margin: 0,
                   fontSize: '0.875rem',
-                  color: colors.accentText
+                  color: colors.secondaryText
                 }}>
                   {project.features.map((feature, featureIndex) => (
                     <li key={featureIndex} style={{
@@ -887,6 +889,8 @@ const Home: React.FC = () => {
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
                       >
                         <path d="M5 12h14"></path>
                         <path d="m12 5 7 7-7 7"></path>
@@ -910,6 +914,7 @@ const Home: React.FC = () => {
                   href={project.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`${project.title} source code on GitHub`}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -947,6 +952,8 @@ const Home: React.FC = () => {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
                   >
                     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
                     <path d="M9 18c-4.51 2-5-2-7-2"></path>
@@ -959,6 +966,8 @@ const Home: React.FC = () => {
                     href={project.liveDemoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={project.liveDemoLabel}
+                    title={project.liveDemoLabel}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -996,6 +1005,8 @@ const Home: React.FC = () => {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      aria-hidden="true"
+                      focusable="false"
                     >
                       <path d="M15 3h6v6"></path>
                       <path d="M10 14 21 3"></path>
@@ -1035,7 +1046,9 @@ const Home: React.FC = () => {
                       e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    <XIcon size={14} />
+                    <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                      <XIcon size={14} />
+                    </span>
                   </a>
                 )}
               </div>
@@ -1088,6 +1101,8 @@ const Home: React.FC = () => {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M5 12h14"></path>
               <path d="m12 5 7 7-7 7"></path>

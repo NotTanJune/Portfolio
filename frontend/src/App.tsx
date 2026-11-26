@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react
 import './App.css';
 import LoadingScreen from './components/LoadingScreen';
 import SeoMetadata from './components/SeoMetadata';
-import { motion, useAnimation, useInView as fmUseInView, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, usePresence, useAnimation, useInView as fmUseInView, useReducedMotion } from 'framer-motion';
 import { useAnimationRefresh } from './utils/useAnimationRefresh';
 import { useIsMobile } from './utils/useIsMobile';
 import { hoverStyleHandlers } from './utils/styleHelpers';
@@ -48,6 +48,224 @@ const RouteFallback: React.FC = () => (
     }}
   />
 );
+
+// Route transitions follow the nav order.
+// Desktop: a shared X axis. Going right in the nav (Projects -> Resume) the old page leaves to the
+// left and the new one arrives from the right; going back reverses it.
+// Phone: a depth stack. Going forward, the new page rises as a sheet over the old one, which
+// recedes; going back, the current page drops away and the previous one comes forward.
+// Routes outside the nav (404) crossfade without moving. Reduced motion crossfades everywhere.
+const NAV_ORDER = ['/', '/projects', '/resume', '/contact'];
+const ROUTE_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const ROUTE_OUT_MS = 360;
+const ROUTE_IN_MS = 600;
+const ROUTE_IN_DELAY_MS = 120;
+const ROUTE_SHIFT_PX = 40;
+const ROUTE_REDUCED_OUT_MS = 150;
+const ROUTE_REDUCED_IN_MS = 250;
+const STACK_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+const STACK_IN_MS = 840;
+const STACK_OUT_MS = 760;
+const STACK_RECEDED = { transform: 'scale(0.94)', opacity: 0.55 };
+const STACK_SHEET_SHADOW = '0 -12px 32px rgba(0, 0, 0, 0.22)';
+// The active nav pill glides between tabs on the same clock as the page.
+const NAV_PILL_MS = 600;
+const NAV_PILL_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
+
+type PillBox = { x: number; w: number };
+type PillState = { link: HTMLElement; from: PillBox | null; to: PillBox; anim: Animation | null };
+
+const measurePill = (link: HTMLElement, base: DOMRect): PillBox => {
+  const box = link.getBoundingClientRect();
+  return { x: box.left - base.left, w: box.width };
+};
+
+// Where the pill is drawn right now: partway along a running glide, or on its tab.
+const pillPosition = (s: PillState, base: DOMRect): PillBox | null => {
+  const p = s.anim?.playState === 'running' ? s.anim.effect?.getComputedTiming().progress : null;
+  if (s.from && p != null) {
+    return { x: s.from.x + (s.to.x - s.from.x) * p, w: s.from.w + (s.to.w - s.from.w) * p };
+  }
+  return s.link.isConnected ? measurePill(s.link, base) : null;
+};
+
+type RouteStyle = 'fade' | 'axis' | 'stack';
+type RouteMotion = { dir: number; style: RouteStyle };
+const RouteMotionContext = React.createContext<React.MutableRefObject<RouteMotion>>({
+  current: { dir: 0, style: 'fade' },
+});
+
+type LayerMotion = {
+  keyframes: Keyframe[];
+  options: KeyframeAnimationOptions;
+  style?: Partial<CSSStyleDeclaration>; // applied for the length of the animation
+};
+
+// How the arriving page moves in.
+const enterMotion = ({ dir, style }: RouteMotion): LayerMotion => {
+  if (style === 'stack' && dir > 0) {
+    return {
+      keyframes: [{ transform: `translateY(${window.innerHeight}px)` }, { transform: 'translateY(0px)' }],
+      options: { duration: STACK_IN_MS, easing: STACK_EASE },
+      style: { boxShadow: STACK_SHEET_SHADOW },
+    };
+  }
+  if (style === 'stack' && dir < 0) {
+    return {
+      keyframes: [STACK_RECEDED, { transform: 'scale(1)', opacity: 1 }],
+      options: { duration: STACK_IN_MS, easing: STACK_EASE },
+      style: { transformOrigin: '50% 0px' },
+    };
+  }
+  if (style === 'fade') {
+    return { keyframes: [{ opacity: 0 }, { opacity: 1 }], options: { duration: ROUTE_REDUCED_IN_MS, easing: ROUTE_EASE } };
+  }
+  const from = `translateX(${dir * ROUTE_SHIFT_PX}px)`;
+  return {
+    keyframes: [{ opacity: 0, transform: from }, { opacity: 1, transform: 'translateX(0px)' }],
+    options: { duration: ROUTE_IN_MS, delay: ROUTE_IN_DELAY_MS, easing: ROUTE_EASE },
+  };
+};
+
+// How the leaving page moves out. It is already pinned (position: fixed) at its on-screen spot;
+// `visibleTop` is how far its top sits above the viewport, so it shrinks toward what was on screen.
+const exitMotion = ({ dir, style }: RouteMotion, visibleTop: number): LayerMotion => {
+  if (style === 'stack' && dir > 0) {
+    return {
+      keyframes: [STACK_RECEDED],
+      options: { duration: STACK_IN_MS, easing: STACK_EASE },
+      style: { transformOrigin: `50% ${visibleTop}px` },
+    };
+  }
+  if (style === 'stack' && dir < 0) {
+    return {
+      keyframes: [{ transform: `translateY(${window.innerHeight}px)` }],
+      options: { duration: STACK_OUT_MS, easing: STACK_EASE },
+      // The page dropping away sits above the one coming forward, cut off at the top of the
+      // viewport so only what was on screen falls away (not the part scrolled past above it).
+      style: { zIndex: '1', clipPath: `inset(${visibleTop}px 0px 0px 0px)` },
+    };
+  }
+  if (style === 'fade') {
+    return { keyframes: [{ opacity: 0 }], options: { duration: ROUTE_REDUCED_OUT_MS, easing: ROUTE_EASE } };
+  }
+  return {
+    keyframes: [{ opacity: 0, transform: `translateX(${-dir * ROUTE_SHIFT_PX}px)` }],
+    options: { duration: ROUTE_OUT_MS, easing: ROUTE_EASE },
+  };
+};
+
+// One page in the route stack. It animates in when it mounts from a navigation; when it leaves,
+// it is pinned where it was on screen (position: fixed) so the window can scroll to the top for
+// the new page without the old one jumping.
+const RouteLayer: React.FC<{ animateIn: boolean; children: React.ReactNode }> = ({ animateIn, children }) => {
+  const [isPresent, safeToRemove] = usePresence();
+  const motionRef = useContext(RouteMotionContext);
+  const ref = useRef<HTMLDivElement>(null);
+  const animateInRef = useRef(animateIn);
+  const enterRef = useRef<Animation | null>(null);
+  const safeToRemoveRef = useRef(safeToRemove);
+  safeToRemoveRef.current = safeToRemove;
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !animateInRef.current || typeof el.animate !== 'function') return;
+    const { keyframes, options, style } = enterMotion(motionRef.current);
+    if (style) Object.assign(el.style, style);
+    const clear = () => {
+      if (style) Object.keys(style).forEach((k) => el.style.removeProperty(k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)));
+    };
+    const anim = el.animate(keyframes, { ...options, fill: 'backwards' });
+    enterRef.current = anim;
+    anim.finished.then(clear, () => {});
+    return () => {
+      anim.cancel();
+      clear();
+    };
+  }, [motionRef]);
+
+  useLayoutEffect(() => {
+    if (isPresent) return;
+    const el = ref.current;
+    const done = () => safeToRemoveRef.current?.();
+    if (!el || typeof el.animate !== 'function') {
+      done();
+      return;
+    }
+    // Start from wherever an interrupted entrance had got to.
+    const current = getComputedStyle(el);
+    const start: Keyframe = {
+      opacity: current.opacity,
+      transform: current.transform === 'none' ? 'translate(0px, 0px)' : current.transform,
+    };
+    enterRef.current?.cancel();
+
+    const rect = el.getBoundingClientRect();
+    el.setAttribute('inert', '');
+    el.setAttribute('aria-hidden', 'true');
+    Object.assign(el.style, {
+      position: 'fixed',
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      zIndex: '-1',
+      pointerEvents: 'none',
+    });
+
+    const { keyframes, options, style } = exitMotion(motionRef.current, -rect.top);
+    if (style) Object.assign(el.style, style);
+    const anim = el.animate([start, ...keyframes], { ...options, fill: 'forwards' });
+    anim.finished.then(done, () => {});
+    return () => anim.cancel();
+  }, [isPresent, motionRef]);
+
+  return <div ref={ref}>{children}</div>;
+};
+
+const RouteTransitions: React.FC = () => {
+  const location = useLocation();
+  const { pathname } = location;
+  const reduce = useReducedMotion() ?? false;
+  const isMobile = useIsMobile();
+  const prevPathRef = useRef(pathname);
+  const motionRef = useRef<RouteMotion>({ dir: 0, style: 'fade' });
+
+  // Set during render so the leaving and the arriving layer read the same motion in their
+  // layout effects. Same inputs give the same value, so a repeated render is harmless.
+  const navigated = prevPathRef.current !== pathname;
+  if (navigated) {
+    const from = NAV_ORDER.indexOf(prevPathRef.current);
+    const to = NAV_ORDER.indexOf(pathname);
+    const dir = from < 0 || to < 0 ? 0 : Math.sign(to - from);
+    motionRef.current = {
+      dir,
+      style: reduce || dir === 0 ? 'fade' : isMobile ? 'stack' : 'axis',
+    };
+  }
+
+  // Runs after the layers' layout effects, so the leaving page is already pinned.
+  useLayoutEffect(() => {
+    if (prevPathRef.current === pathname) return;
+    prevPathRef.current = pathname;
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return (
+    <RouteMotionContext.Provider value={motionRef}>
+      <AnimatePresence initial={false}>
+        <RouteLayer key={pathname} animateIn={navigated}>
+          <Routes location={location}>
+            <Route path="/" element={<RouteContent><Home /></RouteContent>} />
+            <Route path="/projects" element={<RouteContent><Projects /></RouteContent>} />
+            <Route path="/contact" element={<RouteContent><Contact /></RouteContent>} />
+            <Route path="/resume" element={<RouteContent><Resume /></RouteContent>} />
+            <Route path="*" element={<RouteContent><NotFound /></RouteContent>} />
+          </Routes>
+        </RouteLayer>
+      </AnimatePresence>
+    </RouteMotionContext.Provider>
+  );
+};
 
 // Lightweight context to delay animations until the loading screen completes
 type AnimationContextType = { canAnimate: boolean };
@@ -248,11 +466,51 @@ const MOBILE_MENU_ID = 'mobile-nav-menu';
 export const Navbar: React.FC = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
   const { theme, toggleTheme } = useContext(ThemeContext);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The menu's highlighted item only follows the route while the menu is open. It closes on tap,
+  // and the new page commits a moment later; without this the highlight would slide to the
+  // tapped item while the menu fades out.
+  const menuPathRef = useRef(location.pathname);
+  if (menuOpen) menuPathRef.current = location.pathname;
+  const menuPath = menuPathRef.current;
   const [needsHamburger, setNeedsHamburger] = useState(false);
   const linksContainerRef = useRef<HTMLDivElement>(null);
   const navInnerRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  const pillStateRef = useRef<PillState | null>(null);
+
+  // Glide the active pill from the previous tab to the new one. Positions are measured against
+  // the nav itself (it is fixed), so the window scroll reset on navigation can't move the pill.
+  useLayoutEffect(() => {
+    const pill = pillRef.current;
+    const inner = navInnerRef.current;
+    const link = pill?.parentElement;
+    const prev = pillStateRef.current;
+    if (!pill || !inner || !link) {
+      prev?.anim?.cancel();
+      pillStateRef.current = null;
+      return;
+    }
+    const base = inner.getBoundingClientRect();
+    const to = measurePill(link, base);
+    const from = prev ? pillPosition(prev, base) : null;
+    prev?.anim?.cancel();
+
+    let anim: Animation | null = null;
+    if (from && !reduceMotion && Math.abs(from.x - to.x) > 0.5 && typeof pill.animate === 'function') {
+      // width animates on a childless, absolutely positioned span: no layout outside it.
+      anim = pill.animate(
+        [
+          { transform: `translateX(${from.x - to.x}px)`, width: `${from.w}px` },
+          { transform: 'translateX(0px)', width: `${to.w}px` },
+        ],
+        { duration: NAV_PILL_MS, easing: NAV_PILL_EASE }
+      );
+    }
+    pillStateRef.current = { link, from, to, anim };
+  }, [location.pathname, needsHamburger, reduceMotion]);
   const controlsRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
 
@@ -354,7 +612,7 @@ export const Navbar: React.FC = () => {
   }, [menuActive, closeMenu]);
 
   return (
-    <nav style={{ 
+    <nav style={{
       position: 'fixed', 
       top: isMobile ? '12px' : '16px',
       left: '50%',
@@ -423,8 +681,10 @@ export const Navbar: React.FC = () => {
                 to={item.to} 
                 aria-current={location.pathname === item.to ? 'page' : undefined}
                 style={{ 
-                  color: location.pathname === item.to ? colors.primaryText : colors.primaryText,
-                  backgroundColor: location.pathname === item.to ? colors.techBg : 'transparent',
+                  color: colors.primaryText,
+                  backgroundColor: 'transparent',
+                  position: 'relative',
+                  isolation: 'isolate',
                   textDecoration: 'none',
                   fontWeight: location.pathname === item.to ? '600' : '500',
                   fontSize: isMobile ? '0.95rem' : '1rem',
@@ -439,29 +699,43 @@ export const Navbar: React.FC = () => {
                 }}
                 onMouseEnter={(e) => {
                   if (location.pathname !== item.to) {
-                    (e.target as HTMLElement).style.backgroundColor = colors.accentHover;
-                    (e.target as HTMLElement).style.color = colors.primaryText;
+                    e.currentTarget.style.backgroundColor = colors.accentHover;
+                    e.currentTarget.style.color = colors.primaryText;
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (location.pathname !== item.to) {
-                    (e.target as HTMLElement).style.backgroundColor = 'transparent';
-                    (e.target as HTMLElement).style.color = colors.primaryText;
-                  }
+                  // Always clear: a link hovered and then clicked would otherwise keep the tint
+                  // after it stops being the active page (the pill now carries the active state).
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = colors.primaryText;
                 }}
                 onFocus={(e) => {
                   if (location.pathname !== item.to) {
-                    (e.target as HTMLElement).style.backgroundColor = colors.accentHover;
-                    (e.target as HTMLElement).style.color = colors.primaryText;
+                    e.currentTarget.style.backgroundColor = colors.accentHover;
+                    e.currentTarget.style.color = colors.primaryText;
                   }
                 }}
                 onBlur={(e) => {
-                  if (location.pathname !== item.to) {
-                    (e.target as HTMLElement).style.backgroundColor = 'transparent';
-                    (e.target as HTMLElement).style.color = colors.primaryText;
-                  }
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = colors.primaryText;
                 }}
               >
+                {location.pathname === item.to && (
+                  <span
+                    ref={pillRef}
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: '100%',
+                      zIndex: -1,
+                      borderRadius: isMobile ? '8px' : '6px',
+                      backgroundColor: colors.techBg,
+                    }}
+                  />
+                )}
                 {item.label}
               </Link>
             </AnimatedSection>
@@ -636,12 +910,12 @@ export const Navbar: React.FC = () => {
                     onClick={() => setMenuOpen(false)}
                     style={{
                       display: 'block', padding: '14px 16px', borderRadius: '16px', textDecoration: 'none',
-                      color: colors.primaryText, backgroundColor: location.pathname === item.to ? colors.techBg : colors.transparentBg,
+                      color: colors.primaryText, backgroundColor: menuPath === item.to ? colors.techBg : colors.transparentBg,
                       fontSize: '1.05rem', fontWeight: 600, border: 'none',
                       transition: 'background-color 0.2s ease'
                     }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = colors.accentHover; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = location.pathname === item.to ? colors.techBg : colors.transparentBg; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = menuPath === item.to ? colors.techBg : colors.transparentBg; }}
                   >
                     {item.label}
                   </Link>
@@ -1014,13 +1288,7 @@ function App() {
               <Navbar />
               <main id="main-content" style={{ flex: '1 0 auto', minHeight: '100dvh', width: '100%' }}>
                 <Suspense fallback={<RouteFallback />}>
-                  <Routes>
-                    <Route path="/" element={<RouteContent><Home /></RouteContent>} />
-                    <Route path="/projects" element={<RouteContent><Projects /></RouteContent>} />
-                    <Route path="/contact" element={<RouteContent><Contact /></RouteContent>} />
-                    <Route path="/resume" element={<RouteContent><Resume /></RouteContent>} />
-                    <Route path="*" element={<RouteContent><NotFound /></RouteContent>} />
-                  </Routes>
+                  <RouteTransitions />
                 </Suspense>
               </main>
               <Footer />

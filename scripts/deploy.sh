@@ -6,7 +6,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 step() { echo "==> $*"; }
-deployable_changes() { git status --porcelain -- frontend backend scripts package.json bun.lock; }
+deployable_changes() { git status --porcelain -- frontend backend worker scripts package.json bun.lock; }
 require_clean() {
   local changes
   changes=$(deployable_changes)
@@ -49,6 +49,7 @@ require_clean "Images were optimized; review and commit them, then re-run."
 step "Running tests"
 (cd backend && bun test) || die "Backend tests failed. Nothing was pushed."
 bun run test:images || die "Image optimizer tests failed. Nothing was pushed."
+bun run test:worker || die "Worker tests failed. Nothing was pushed."
 (cd frontend && CI=true bun run test --watchAll=false) || die "Frontend tests failed. Nothing was pushed."
 
 step "Pushing heroku-deploy to Heroku main"

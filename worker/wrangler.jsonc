@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portfolio-contact",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+
+  // Runs in front of the Heroku origin for this one path only. Everything else still goes to Heroku.
+  "routes": [{ "pattern": "tanmaynargas.com/api/contact", "zone_name": "tanmaynargas.com" }],
+  "workers_dev": false,
+  "preview_urls": false,
+
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["contact@tanmaynargas.com"] }],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio-contact",
+      "database_id": "4c65d83f-dd82-4dd0-bdec-01358e4a7e51",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "vars": { "CONTACT_FROM": "contact@tanmaynargas.com" },
+  // Secrets (set with `bunx wrangler secret put`): TURNSTILE_SECRET_KEY, CONTACT_TO.
+
+  "observability": { "enabled": true }
+}

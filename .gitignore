@@ -32,3 +32,8 @@ AGENTS.md
 
 # Local environment files: production values live in Heroku config vars
 .env
+
+# Cloudflare Worker local state and secrets
+/worker/node_modules
+/worker/.wrangler
+/worker/.dev.vars

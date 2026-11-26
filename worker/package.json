@@ -1,0 +1,18 @@
+{
+  "name": "portfolio-contact-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": "1.4.0"
+  },
+  "scripts": {
+    "dev": "wrangler d1 migrations apply portfolio-contact --local && wrangler dev",
+    "test": "bun test",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.168.0"
+  }
+}
